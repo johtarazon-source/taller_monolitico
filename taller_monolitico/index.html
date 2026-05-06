@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoRent | Alquiler de Vehiculos</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+    <header class="home-header">
+        <div class="home-wrapper home-header-inner">
+            <div class="home-logo">AutoRent</div>
+            <nav class="home-nav">
+                <a class="active" href="#">Inicio</a>
+                <a href="#autos">Autos</a>
+                <a href="#ofertas">Ofertas</a>
+                <a href="#faq">FAQ</a>
+                <a href="#contacto">Contacto</a>
+                <span class="home-lang">ES</span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="home-main">
+        <section class="home-hero">
+            <div class="home-wrapper">
+                <div class="home-hero-content">
+                    <h1>Encuentra el Auto Ideal para tu Viaje</h1>
+                    <p>Renta un auto de forma facil y rapida.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-search-box home-wrapper">
+            <h2>Busca tu Auto</h2>
+            <form class="home-search-form" action="view/reserva.php" method="GET">
+                <input type="text" name="lugar" placeholder="Lugar de Recogida">
+                <input type="date" name="recogida">
+                <input type="date" name="entrega">
+                <input type="time" name="hora">
+                <button type="submit">BUSCAR</button>
+            </form>
+        </section>
+
+        <section class="home-features home-wrapper">
+            <article>
+                <h3>Precios Bajos</h3>
+                <p>Las mejores tarifas garantizadas.</p>
+            </article>
+            <article>
+                <h3>Seguro Incluido</h3>
+                <p>Cobertura completa en todos nuestros autos.</p>
+            </article>
+            <article>
+                <h3>Cancelacion Gratis</h3>
+                <p>Modifica o cancela sin costo adicional.</p>
+            </article>
+        </section>
+
+        <section id="autos" class="home-wrapper home-cards">
+            <h2>Autos Destacados</h2>
+            <div class="home-card-grid">
+                <article class="home-car-card">
+                    <img src="https://motormagazine.com.ar/wp-content/uploads/2023/09/renault-sandero-stepway-automaticos-1-1.jpg" alt="Auto economico">
+                    <div class="home-card-body">
+                        <h3>Economico</h3>
+                        <p>Desde <strong>$25</strong> / dia</p>
+                    </div>
+                </article>
+                <article class="home-car-card">
+                        <img src="https://www.carpro.com/hs-fs/hubfs/2021-toyota-rav4-prime-amy-car-pro-2.jpg?width=1020&name=2021-toyota-rav4-prime-amy-car-pro-2.jpg" alt="Auto SUV">
+                    <div class="home-card-body">
+                        <h3>SUV</h3>
+                        <p>Desde <strong>$45</strong> / dia</p>
+                    </div>
+                </article>
+                <article class="home-car-card">
+                        <img src="https://octane.rent/wp-content/uploads/2024/05/ford_mustang_gt_convertible_restyling_red_14-600x400.webp" alt="Auto Convertible">
+                    <div class="home-card-body">
+                        <h3>Convertible</h3>
+                        <p>Desde <strong>$70</strong> / dia</p>
+                    </div>
+                </article>
+                <article class="home-car-card">
+                        <img src="https://images.squarespace-cdn.com/content/v1/5e7918a4b1051f6e49dcfdb1/1715979587015-S52VWYTIPW0WP1H90X2Y/500_ftqd.jpg" alt="Auto de Lujo">
+                    <div class="home-card-body">
+                        <h3>Lujo</h3>
+                        <p>Desde <strong>$95</strong> / dia</p>
+                    </div>
+                </article>
+            </div>
+
+            <div class="home-center-btn">
+                <a href="view/vehiculos.php">Ver Todos los Autos</a>
+            </div>
+        </section>
+
+        <section id="ofertas" class="home-wrapper home-offers">
+            <h2>Ofertas Especiales</h2>
+            <p>Descuentos increibles en renta de autos.</p>
+            <a href="view/reserva.php">Ver Ofertas</a>
+        </section>
+
+        <section class="home-wrapper home-admin-links" id="contacto">
+            <h2>Acceso al Gestor</h2>
+            <div class="menu-grid">
+                <a class="card-link" href="view/clientes.php">
+                    <h3>Clientes</h3>
+                    <p>Registrar y consultar clientes.</p>
+                </a>
+                <a class="card-link" href="view/vehiculos.php">
+                    <h3>Vehiculos</h3>
+                    <p>Administrar flota y disponibilidad.</p>
+                </a>
+                <a class="card-link" href="view/reserva.php">
+                    <h3>Reservas</h3>
+                    <p>Crear reservas y gestionar devoluciones.</p>
+                </a>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
