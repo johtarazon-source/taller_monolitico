@@ -33,6 +33,10 @@ final class Vehiculo extends Model
         'estado',
     ];
 
+    protected $casts = [
+        'anio' => 'integer',
+    ];
+
     public function reservas(): HasMany
     {
         return $this->hasMany(Reserva::class, 'vehiculo_id');
