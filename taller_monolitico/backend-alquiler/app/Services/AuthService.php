@@ -29,7 +29,7 @@ final class AuthService
      */
     public function login(string $usuario, string $password): string
     {
-        if ($usuario !== $this->adminUser || !password_verify($password, $this->adminPasswordHash)) {
+        if (!$this->credencialesValidas($usuario, $password)) {
             throw new UnauthorizedException('Usuario o contraseña incorrectos.');
         }
 
@@ -47,6 +47,15 @@ final class AuthService
         $this->escribirSesiones($sesiones);
 
         return $token;
+    }
+
+    /**
+     * Compara con el usuario administrador definido en el .env.
+     * La usan el login de la API (token) y el de la web (sesion PHP).
+     */
+    public function credencialesValidas(string $usuario, string $password): bool
+    {
+        return $usuario === $this->adminUser && password_verify($password, $this->adminPasswordHash);
     }
 
     /**

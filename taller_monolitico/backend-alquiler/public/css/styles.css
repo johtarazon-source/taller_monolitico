@@ -1,0 +1,699 @@
+/* =========================================================
+   1. Variables y reset
+   ========================================================= */
+
+:root {
+  --color-fondo: #f4f6fa;
+  --color-superficie: #ffffff;
+  --color-superficie-hover: #f9fbfd;
+  --color-texto: #1d2735;
+  --color-texto-invertido: #ffffff;
+  --color-suave: #5d6b7e;
+  --color-borde: #dbe1ea;
+  --color-primario: #2f5d9e;
+  --color-primario-oscuro: #234a80;
+  --color-foco: rgb(47 93 158 / 45%);
+  --color-peligro: #b42318;
+
+  --estado-disponible: #157a4a;
+  --estado-disponible-fondo: #e3f5ec;
+  --estado-alquilado: #9a5b00;
+  --estado-alquilado-fondo: #fdf0d9;
+  --estado-mantenimiento: #5b4bb7;
+  --estado-mantenimiento-fondo: #ece9fb;
+  --estado-neutro: #5d6b7e;
+  --estado-neutro-fondo: #eef1f5;
+  --estado-alerta: #b42318;
+  --estado-alerta-fondo: #fdecea;
+
+  --radio: 10px;
+  --radio-chico: 8px;
+  --radio-grande: 14px;
+  --sombra: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 10%);
+  --espacio: clamp(1rem, 2.5vw, 1.75rem);
+  --ancho-maximo: 1200px;
+
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  color: var(--color-texto);
+  line-height: 1.5;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-fondo);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.25;
+}
+
+h1 {
+  font-size: clamp(1.4rem, 3vw, 1.85rem);
+}
+
+h2 {
+  font-size: 1.05rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+a {
+  color: var(--color-primario);
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-foco);
+  outline-offset: 2px;
+}
+
+.texto-suave {
+  color: var(--color-suave);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* =========================================================
+   2. Layout general (Grid)
+   ========================================================= */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.app__contenido {
+  flex: 1;
+  width: min(100%, var(--ancho-maximo));
+  margin-inline: auto;
+  padding: var(--espacio);
+}
+
+.app__pie {
+  padding: 1rem;
+  text-align: center;
+  color: var(--color-suave);
+  font-size: 0.85rem;
+}
+
+.app--login .app__pie {
+  display: none;
+}
+
+.pagina {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.pagina--angosta {
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+.pagina__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.rejilla-campos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem 1rem;
+}
+
+.campo--ancho {
+  grid-column: 1 / -1;
+}
+
+/* =========================================================
+   3. Navegacion y botones (Flexbox)
+   ========================================================= */
+
+.app__cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: min(100%, var(--ancho-maximo));
+  margin-inline: auto;
+  padding: 0.6rem var(--espacio);
+}
+
+.barra__marca {
+  font-weight: 700;
+  color: var(--color-texto);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.barra__nav {
+  display: flex;
+  gap: 0.25rem;
+  flex: 1;
+  overflow-x: auto;
+}
+
+.barra__enlace {
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  color: var(--color-suave);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.barra__enlace:hover {
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+.barra__enlace--activo,
+.barra__enlace--activo:hover {
+  background: var(--color-primario);
+  color: var(--color-texto-invertido);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio-chico);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.btn--primario {
+  background: var(--color-primario);
+  color: var(--color-texto-invertido);
+}
+
+.btn--primario:hover {
+  background: var(--color-primario-oscuro);
+}
+
+.btn--secundario {
+  background: var(--color-superficie);
+  border-color: var(--color-borde);
+  color: var(--color-texto);
+}
+
+.btn--secundario:hover {
+  background: var(--color-fondo);
+}
+
+.btn--peligro {
+  background: var(--color-peligro);
+  color: var(--color-texto-invertido);
+}
+
+.btn--texto-peligro {
+  background: transparent;
+  color: var(--color-peligro);
+}
+
+.btn--texto-peligro:hover {
+  background: var(--estado-alerta-fondo);
+}
+
+.btn--chico {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.875rem;
+}
+
+.btn--bloque {
+  width: 100%;
+}
+
+/* Formularios y filtros */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+}
+
+.filtros__campo {
+  flex: 1 1 200px;
+  max-width: 340px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.campo__etiqueta {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.campo__control {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-chico);
+  background: var(--color-superficie);
+}
+
+.campo__control[aria-invalid='true'] {
+  border-color: var(--color-peligro);
+}
+
+.casilla {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.form-error {
+  color: var(--color-peligro);
+}
+
+/* Formularios de alta, edicion y confirmacion */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra);
+}
+
+.formulario__pie {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+/* Mensajes tras una accion (exito o error) */
+.alerta {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid;
+  border-radius: var(--radio-chico);
+}
+
+.alerta--exito {
+  color: var(--estado-disponible);
+  background: var(--estado-disponible-fondo);
+}
+
+.alerta--error {
+  color: var(--estado-alerta);
+  background: var(--estado-alerta-fondo);
+}
+
+/* =========================================================
+   4. Tarjetas (Flexbox / Grid)
+   ========================================================= */
+
+.rejilla-tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.tarjeta-vehiculo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 1rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+}
+
+.tarjeta-vehiculo__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.tarjeta-vehiculo__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+}
+
+.tarjetas-resumen {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.tarjeta-dato {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-left: 4px solid var(--estado-neutro);
+  border-radius: var(--radio);
+}
+
+.tarjeta-dato__etiqueta {
+  color: var(--color-suave);
+  font-size: 0.85rem;
+}
+
+.tarjeta-dato__valor {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.tarjeta-dato--disponible {
+  border-left-color: var(--estado-disponible);
+}
+
+.tarjeta-dato--alquilado {
+  border-left-color: var(--estado-alquilado);
+}
+
+.tarjeta-dato--mantenimiento {
+  border-left-color: var(--estado-mantenimiento);
+}
+
+.estado-vacio {
+  grid-column: 1 / -1;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--color-suave);
+  background: var(--color-superficie);
+  border: 1px dashed var(--color-borde);
+  border-radius: var(--radio);
+}
+
+.estado-vacio--error {
+  color: var(--color-peligro);
+  border-color: var(--color-peligro);
+}
+
+/* =========================================================
+   5. Login (Flexbox, Position)
+   ========================================================= */
+
+.login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 80vh;
+}
+
+.login__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: min(90%, 340px);
+  padding: 1.75rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-grande);
+  box-shadow: var(--sombra);
+}
+
+/* =========================================================
+   6. Estados visuales (inline-block)
+   ========================================================= */
+
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--estado-neutro);
+  background: var(--estado-neutro-fondo);
+}
+
+.badge--disponible,
+.badge--completada {
+  color: var(--estado-disponible);
+  background: var(--estado-disponible-fondo);
+}
+
+.badge--alquilado,
+.badge--activa {
+  color: var(--estado-alquilado);
+  background: var(--estado-alquilado-fondo);
+}
+
+.badge--mantenimiento,
+.badge--programada {
+  color: var(--estado-mantenimiento);
+  background: var(--estado-mantenimiento-fondo);
+}
+
+.badge--vencida {
+  color: var(--estado-alerta);
+  background: var(--estado-alerta-fondo);
+}
+
+/* =========================================================
+   7. Tablas de listados
+   ========================================================= */
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  overflow: hidden;
+}
+
+.tabla th,
+.tabla td {
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.tabla th {
+  background: var(--color-fondo);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-suave);
+}
+
+.tabla tbody tr:hover {
+  background: var(--color-superficie-hover);
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabla__acciones {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tabla__acciones .btn + .btn {
+  margin-left: 0.3rem;
+}
+
+.tabla__fila--alerta,
+.tabla__fila--alerta:hover {
+  background: var(--estado-alerta-fondo);
+}
+
+/* =========================================================
+   8. Reportes (multi-column)
+   ========================================================= */
+
+.reporte-columnas {
+  columns: 3 280px;
+  column-gap: 1rem;
+}
+
+.bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  break-inside: avoid;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+}
+
+.bloque--alerta {
+  border-color: var(--estado-alerta);
+  background: var(--estado-alerta-fondo);
+}
+
+.lista-simple {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lista-simple__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 0.5rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--color-borde);
+}
+
+.lista-simple__detalle {
+  grid-column: 1;
+  color: var(--color-suave);
+  font-size: 0.85rem;
+}
+
+.lista-simple__estado {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  align-self: center;
+}
+
+/* =========================================================
+   9. Responsive (media queries, clamp, unidades relativas)
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .barra {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .barra__nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .rejilla-campos {
+    grid-template-columns: 1fr;
+  }
+
+  .filtros__campo {
+    max-width: none;
+  }
+
+  .pagina__cabecera .btn {
+    width: 100%;
+  }
+
+  /* Las tablas pasan a "tarjetas" apiladas usando el titulo de cada celda. */
+  .tabla thead {
+    display: none;
+  }
+
+  .tabla,
+  .tabla tbody,
+  .tabla tr {
+    display: block;
+    width: 100%;
+  }
+
+  .tabla tr {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--color-borde);
+  }
+
+  .tabla td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.3rem 0.9rem;
+    text-align: right;
+    overflow-wrap: anywhere;
+    border: 0;
+  }
+
+  .tabla td[data-titulo]::before {
+    content: attr(data-titulo);
+    font-weight: 600;
+    text-align: left;
+    color: var(--color-suave);
+  }
+
+  .tabla__acciones {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.3rem;
+    white-space: normal;
+  }
+
+  .tabla__acciones .btn + .btn {
+    margin-left: 0;
+  }
+}
