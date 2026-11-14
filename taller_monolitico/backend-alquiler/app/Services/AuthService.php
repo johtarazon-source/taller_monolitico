@@ -36,7 +36,7 @@ final class AuthService
         $token = bin2hex(random_bytes(32));
         $sesiones = $this->leerSesiones();
 
-        $sesiones[$token] = [
+        $sesiones[$this->hashToken($token)] = [
             'usuario' => $usuario,
             'activo' => true,
             'expira_en' => (new DateTimeImmutable())
@@ -55,9 +55,10 @@ final class AuthService
     public function logout(string $token): void
     {
         $sesiones = $this->leerSesiones();
+        $hash = $this->hashToken($token);
 
-        if (isset($sesiones[$token])) {
-            unset($sesiones[$token]);
+        if (isset($sesiones[$hash])) {
+            unset($sesiones[$hash]);
             $this->escribirSesiones($sesiones);
         }
     }
@@ -72,14 +73,22 @@ final class AuthService
         }
 
         $sesiones = $this->leerSesiones();
+        $sesion = $sesiones[$this->hashToken($token)] ?? null;
 
-        if (!isset($sesiones[$token])) {
+        if ($sesion === null) {
             return false;
         }
 
-        $sesion = $sesiones[$token];
-
         return ($sesion['activo'] ?? false) === true && ($sesion['expira_en'] ?? 0) > time();
+    }
+
+    /**
+     * Las sesiones se indexan por el hash del token (no por el token en claro)
+     * para que una fuga del archivo de sesiones no exponga tokens utilizables.
+     */
+    private function hashToken(string $token): string
+    {
+        return hash('sha256', $token);
     }
 
     /**

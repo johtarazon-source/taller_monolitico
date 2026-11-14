@@ -26,11 +26,21 @@ $app->addBodyParsingMiddleware();
 $displayErrorDetails = ($_ENV['APP_ENV'] ?? 'production') !== 'production';
 $errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, true, true);
 $errorMiddleware->setDefaultErrorHandler(
-    function (ServerRequestInterface $request, Throwable $exception) use ($app): ResponseInterface {
-        $status = $exception instanceof AppException ? $exception->getStatusCode() : 500;
+    function (
+        ServerRequestInterface $request,
+        Throwable $exception
+    ) use ($app, $displayErrorDetails): ResponseInterface {
         $response = $app->getResponseFactory()->createResponse();
 
-        return JsonView::render($response, false, $exception->getMessage(), null, $status);
+        if ($exception instanceof AppException) {
+            return JsonView::render($response, false, $exception->getMessage(), null, $exception->getStatusCode());
+        }
+
+        error_log($exception->getMessage() . "\n" . $exception->getTraceAsString());
+
+        $mensaje = $displayErrorDetails ? $exception->getMessage() : 'Error interno del servidor.';
+
+        return JsonView::render($response, false, $mensaje, null, 500);
     }
 );
 
