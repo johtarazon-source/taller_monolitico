@@ -16,20 +16,20 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final class ClienteController extends WebController
 {
-    public function __construct(HtmlView $vista, private ClienteService $clientes)
+    public function __construct(HtmlView $vista, private ClienteService $servicioClientes)
     {
         parent::__construct($vista);
     }
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $buscar = (string) ($request->getQueryParams()['buscar'] ?? '');
+        $terminoBusqueda = (string) ($request->getQueryParams()['buscar'] ?? '');
 
         return $this->render($response, 'clientes/index', [
             'titulo' => 'Clientes',
             'seccion' => 'clientes',
-            'buscar' => $buscar,
-            'clientes' => $this->clientes->listar($buscar),
+            'terminoBusqueda' => $terminoBusqueda,
+            'clientes' => $this->servicioClientes->listar($terminoBusqueda),
         ]);
     }
 
@@ -40,12 +40,12 @@ final class ClienteController extends WebController
 
     public function guardar(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $datos = $this->formulario($request);
+        $camposFormulario = $this->formulario($request);
 
         try {
-            $this->clientes->crear($datos);
-        } catch (ValidationException $e) {
-            return $this->formularioCliente($response, $datos, null, $e->getErrores() ?? [], 422);
+            $this->servicioClientes->crear($camposFormulario);
+        } catch (ValidationException $excepcionValidacion) {
+            return $this->formularioCliente($response, $camposFormulario, null, $excepcionValidacion->obtenerErrores() ?? [], 422);
         }
 
         $this->exito('Cliente registrado correctamente.');
@@ -55,20 +55,20 @@ final class ClienteController extends WebController
 
     public function editar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $cliente = $this->clientes->obtener((int) $args['id']);
+        $cliente = $this->servicioClientes->obtener((int) $args['id']);
 
         return $this->formularioCliente($response, $cliente->toArray(), $cliente->id);
     }
 
     public function actualizar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $id = (int) $args['id'];
-        $datos = $this->formulario($request);
+        $clienteId = (int) $args['id'];
+        $camposFormulario = $this->formulario($request);
 
         try {
-            $this->clientes->actualizar($id, $datos);
-        } catch (ValidationException $e) {
-            return $this->formularioCliente($response, $datos, $id, $e->getErrores() ?? [], 422);
+            $this->servicioClientes->actualizar($clienteId, $camposFormulario);
+        } catch (ValidationException $excepcionValidacion) {
+            return $this->formularioCliente($response, $camposFormulario, $clienteId, $excepcionValidacion->obtenerErrores() ?? [], 422);
         }
 
         $this->exito('Cliente actualizado correctamente.');
@@ -78,26 +78,26 @@ final class ClienteController extends WebController
 
     public function confirmarEliminar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $cliente = $this->clientes->obtener((int) $args['id']);
+        $cliente = $this->servicioClientes->obtener((int) $args['id']);
 
         return $this->render($response, 'confirmar', [
             'titulo' => 'Eliminar cliente',
             'seccion' => 'clientes',
             'mensaje' => "¿Eliminar a {$cliente->nombre}? Esta acción no se puede deshacer.",
-            'accion' => "/clientes/{$cliente->id}/eliminar",
-            'volver' => '/clientes',
+            'rutaAccion' => "/clientes/{$cliente->id}/eliminar",
+            'rutaVolver' => '/clientes',
             'textoBoton' => 'Eliminar',
-            'peligro' => true,
+            'esPeligrosa' => true,
         ]);
     }
 
     public function eliminar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $this->clientes->eliminar((int) $args['id']);
+            $this->servicioClientes->eliminar((int) $args['id']);
             $this->exito('Cliente eliminado correctamente.');
-        } catch (AppException $e) {
-            $this->error($e->getMessage());
+        } catch (AppException $excepcionAplicacion) {
+            $this->error($excepcionAplicacion->getMessage());
         }
 
         return $this->redirigir($response, '/clientes');
@@ -105,34 +105,34 @@ final class ClienteController extends WebController
 
     public function historial(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $id = (int) $args['id'];
+        $clienteId = (int) $args['id'];
 
         return $this->render($response, 'historial', [
             'titulo' => 'Historial del cliente',
             'seccion' => 'clientes',
-            'tipo' => 'cliente',
-            'entidad' => $this->clientes->obtener($id),
-            'reservas' => $this->clientes->historial($id),
+            'tipoHistorial' => 'cliente',
+            'propietarioHistorial' => $this->servicioClientes->obtener($clienteId),
+            'reservas' => $this->servicioClientes->historial($clienteId),
         ]);
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $camposFormulario
      * @param array<string, string> $errores
      */
     private function formularioCliente(
         ResponseInterface $response,
-        array $datos,
-        ?int $id = null,
+        array $camposFormulario,
+        ?int $clienteId = null,
         array $errores = [],
-        int $status = 200
+        int $codigoEstado = 200
     ): ResponseInterface {
         return $this->render($response, 'clientes/formulario', [
-            'titulo' => $id === null ? 'Nuevo cliente' : 'Editar cliente',
+            'titulo' => $clienteId === null ? 'Nuevo cliente' : 'Editar cliente',
             'seccion' => 'clientes',
-            'id' => $id,
-            'datos' => $datos,
+            'clienteId' => $clienteId,
+            'datosFormulario' => $camposFormulario,
             'errores' => $errores,
-        ], $status);
+        ], $codigoEstado);
     }
 }

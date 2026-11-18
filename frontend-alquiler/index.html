@@ -7,10 +7,10 @@
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
-    <main id="vista-login" class="login">
-      <form id="form-login" class="login__tarjeta" novalidate aria-labelledby="login-titulo">
-        <h1 id="login-titulo" class="login__titulo">Gestor de Alquiler</h1>
-        <p id="login-alerta" class="alerta" role="alert" aria-live="polite" hidden></p>
+    <main id="vista-inicio-sesion" class="inicio-sesion">
+      <form id="formulario-inicio-sesion" class="inicio-sesion__tarjeta" novalidate aria-labelledby="inicio-sesion-titulo">
+        <h1 id="inicio-sesion-titulo" class="inicio-sesion__titulo">Gestor de Alquiler</h1>
+        <p id="inicio-sesion-alerta" class="alerta" role="alert" aria-live="polite" hidden></p>
 
         <label class="campo">
           <span class="campo__etiqueta">Usuario</span>
@@ -26,18 +26,18 @@
       </form>
     </main>
 
-    <div id="shell" hidden>
+    <div id="contenedor-principal" hidden>
       <header class="encabezado">
         <span class="encabezado__marca">Gestor de Alquiler</span>
-        <nav class="nav" aria-label="Navegación principal">
-          <a href="#" class="nav__enlace" data-modulo="vehiculos" aria-current="page">Vehículos</a>
-          <a href="#" class="nav__enlace" data-modulo="clientes">Clientes</a>
-          <a href="#" class="nav__enlace" data-modulo="reservas">Reservas</a>
-          <a href="#" class="nav__enlace" data-modulo="disponibilidad">Disponibilidad</a>
+        <nav class="navegacion" aria-label="Navegación principal">
+          <a href="#" class="navegacion__enlace" data-modulo="vehiculos" aria-current="page">Vehículos</a>
+          <a href="#" class="navegacion__enlace" data-modulo="clientes">Clientes</a>
+          <a href="#" class="navegacion__enlace" data-modulo="reservas">Reservas</a>
+          <a href="#" class="navegacion__enlace" data-modulo="disponibilidad">Disponibilidad</a>
         </nav>
         <div class="encabezado__usuario">
           <span id="usuario-actual"></span>
-          <button id="btn-logout" type="button" class="boton boton--secundario">Salir</button>
+          <button id="boton-cerrar-sesion" type="button" class="boton boton--secundario">Salir</button>
         </div>
       </header>
 

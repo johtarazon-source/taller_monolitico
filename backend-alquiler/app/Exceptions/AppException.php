@@ -15,20 +15,20 @@ class AppException extends RuntimeException
     /**
      * @param array<string, string>|null $errores
      */
-    public function __construct(string $mensaje, private int $statusCode = 400, private ?array $errores = null)
+    public function __construct(string $mensaje, private int $codigoEstado = 400, private ?array $errores = null)
     {
         parent::__construct($mensaje);
     }
 
-    public function getStatusCode(): int
+    public function obtenerCodigoEstado(): int
     {
-        return $this->statusCode;
+        return $this->codigoEstado;
     }
 
     /**
      * @return array<string, string>|null
      */
-    public function getErrores(): ?array
+    public function obtenerErrores(): ?array
     {
         return $this->errores;
     }

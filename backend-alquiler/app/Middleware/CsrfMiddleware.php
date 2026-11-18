@@ -19,9 +19,9 @@ final class CsrfMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if ($request->getMethod() === 'POST') {
-            $token = (string) (((array) $request->getParsedBody())['_csrf'] ?? '');
+            $tokenCsrf = (string) (((array) $request->getParsedBody())['_csrf'] ?? '');
 
-            if (!Sesion::csrfValido($token)) {
+            if (!Sesion::csrfValido($tokenCsrf)) {
                 throw new AppException('El formulario expiró. Vuelva a cargar la página e inténtelo de nuevo.', 403);
             }
         }

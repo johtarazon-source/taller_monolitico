@@ -19,32 +19,32 @@ abstract class WebController
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $datosVista
      */
-    protected function render(ResponseInterface $response, string $plantilla, array $datos = [], int $status = 200): ResponseInterface
+    protected function render(ResponseInterface $response, string $plantilla, array $datosVista = [], int $codigoEstado = 200): ResponseInterface
     {
-        return $this->vista->render($response, $plantilla, $datos, $status);
+        return $this->vista->render($response, $plantilla, $datosVista, $codigoEstado);
     }
 
     /**
      * Redirige tras un POST (patron Post/Redirect/Get) para que recargar
      * la pagina no reenvie el formulario.
      *
-     * @param array<string, scalar|null> $query
+     * @param array<string, scalar|null> $parametrosConsulta
      */
-    protected function redirigir(ResponseInterface $response, string $ruta, array $query = []): ResponseInterface
+    protected function redirigir(ResponseInterface $response, string $ruta, array $parametrosConsulta = []): ResponseInterface
     {
-        return $response->withHeader('Location', $this->vista->url($ruta, $query))->withStatus(303);
+        return $response->withHeader('Location', $this->vista->url($ruta, $parametrosConsulta))->withStatus(303);
     }
 
     protected function exito(string $mensaje): void
     {
-        Sesion::flash('exito', $mensaje);
+        Sesion::mensajeTemporal('exito', $mensaje);
     }
 
     protected function error(string $mensaje): void
     {
-        Sesion::flash('error', $mensaje);
+        Sesion::mensajeTemporal('error', $mensaje);
     }
 
     /**
@@ -54,9 +54,9 @@ abstract class WebController
      */
     protected function formulario(ServerRequestInterface $request): array
     {
-        $datos = (array) $request->getParsedBody();
-        unset($datos['_csrf']);
+        $camposFormulario = (array) $request->getParsedBody();
+        unset($camposFormulario['_csrf']);
 
-        return $datos;
+        return $camposFormulario;
     }
 }

@@ -8,18 +8,18 @@
 ?>
 <article class="tarjeta-cliente">
     <header class="tarjeta-cliente__cabecera">
-        <h3><?= $this->e($cliente->nombre) ?></h3>
+        <h3><?= $this->escapar($cliente->nombre) ?></h3>
         <?php if (!$cliente->numero_licencia): ?>
-            <span class="badge badge--cancelada">Sin licencia</span>
+            <span class="insignia insignia--cancelada">Sin licencia</span>
         <?php endif; ?>
     </header>
-    <p class="texto-suave"><?= $this->e($cliente->telefono ?: 'Sin teléfono') ?> · <?= $this->e($cliente->correo ?: 'Sin correo') ?></p>
+    <p class="texto-suave"><?= $this->escapar($cliente->telefono ?: 'Sin teléfono') ?> · <?= $this->escapar($cliente->correo ?: 'Sin correo') ?></p>
     <?php if ($cliente->numero_licencia): ?>
-        <small class="texto-suave">Licencia: <?= $this->e($cliente->numero_licencia) ?></small>
+        <small class="texto-suave">Licencia: <?= $this->escapar($cliente->numero_licencia) ?></small>
     <?php endif; ?>
     <div class="tarjeta-cliente__acciones">
-        <a class="btn btn--chico btn--secundario" href="<?= $this->e($this->url("/clientes/{$cliente->id}/editar")) ?>">Editar</a>
-        <a class="btn btn--chico btn--secundario" href="<?= $this->e($this->url("/clientes/{$cliente->id}/historial")) ?>">Historial</a>
-        <a class="btn btn--chico btn--texto-peligro" href="<?= $this->e($this->url("/clientes/{$cliente->id}/eliminar")) ?>">Eliminar</a>
+        <a class="boton boton--chico boton--secundario" href="<?= $this->escapar($this->url("/clientes/{$cliente->id}/editar")) ?>">Editar</a>
+        <a class="boton boton--chico boton--secundario" href="<?= $this->escapar($this->url("/clientes/{$cliente->id}/historial")) ?>">Historial</a>
+        <a class="boton boton--chico boton--texto-peligro" href="<?= $this->escapar($this->url("/clientes/{$cliente->id}/eliminar")) ?>">Eliminar</a>
     </div>
 </article>

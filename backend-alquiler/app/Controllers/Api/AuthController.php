@@ -14,7 +14,7 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final class AuthController extends BaseController
 {
-    public function __construct(private AuthService $authService)
+    public function __construct(private AuthService $servicioAutenticacion)
     {
     }
 
@@ -22,15 +22,15 @@ final class AuthController extends BaseController
     {
         $cuerpo = $this->cuerpo($request);
         $usuario = trim((string) ($cuerpo['usuario'] ?? ''));
-        $password = (string) ($cuerpo['password'] ?? '');
+        $contrasena = (string) ($cuerpo['password'] ?? '');
 
-        if ($usuario === '' || $password === '') {
+        if ($usuario === '' || $contrasena === '') {
             return $this->json($response, false, 'Usuario y contraseña son obligatorios.', null, 422);
         }
 
-        $token = $this->authService->login($usuario, $password);
+        $tokenAcceso = $this->servicioAutenticacion->login($usuario, $contrasena);
 
-        return $this->json($response, true, 'Inicio de sesión exitoso.', ['token' => $token, 'usuario' => $usuario]);
+        return $this->json($response, true, 'Inicio de sesión exitoso.', ['token' => $tokenAcceso, 'usuario' => $usuario]);
     }
 
     /**
@@ -38,7 +38,7 @@ final class AuthController extends BaseController
      */
     public function logout(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $this->authService->logout((string) $request->getAttribute(AuthMiddleware::ATRIBUTO_TOKEN, ''));
+        $this->servicioAutenticacion->logout((string) $request->getAttribute(AuthMiddleware::ATRIBUTO_TOKEN, ''));
 
         return $this->json($response, true, 'Sesión cerrada correctamente.', null);
     }

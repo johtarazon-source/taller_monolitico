@@ -22,69 +22,76 @@ Dotenv::createImmutable(__DIR__ . '/..')->safeLoad();
 date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'America/Bogota');
 
 // Permite servir la aplicacion desde una subcarpeta de Apache (XAMPP) o con `php -S`.
-$basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+$rutaBase = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
 
-bootDatabase();
-Sesion::iniciar($basePath);
+iniciarBaseDatos();
+Sesion::iniciar($rutaBase);
 
-$container = buildContainer($basePath);
-AppFactory::setContainer($container);
-$app = AppFactory::create();
-$app->setBasePath($basePath);
+$contenedor = construirContenedor($rutaBase);
+AppFactory::setContainer($contenedor);
+$aplicacion = AppFactory::create();
+$aplicacion->setBasePath($rutaBase);
 
-$app->addBodyParsingMiddleware();
-$app->addRoutingMiddleware();
+$aplicacion->addBodyParsingMiddleware();
+$aplicacion->addRoutingMiddleware();
 
-$displayErrorDetails = ($_ENV['APP_ENV'] ?? 'production') !== 'production';
-$errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, true, true);
-$errorMiddleware->setDefaultErrorHandler(
-    function (ServerRequestInterface $request, Throwable $exception) use ($app, $container, $basePath, $displayErrorDetails): ResponseInterface {
+$mostrarDetallesError = ($_ENV['APP_ENV'] ?? 'production') !== 'production';
+$middlewareErrores = $aplicacion->addErrorMiddleware($mostrarDetallesError, true, true);
+$middlewareErrores->setDefaultErrorHandler(
+    function (ServerRequestInterface $request, Throwable $exception) use ($aplicacion, $contenedor, $rutaBase, $mostrarDetallesError): ResponseInterface {
         if (!$exception instanceof AppException
             && !$exception instanceof HttpNotFoundException
             && !$exception instanceof HttpMethodNotAllowedException) {
             error_log($exception->getMessage() . "\n" . $exception->getTraceAsString());
         }
 
-        [$status, $mensaje] = match (true) {
-            $exception instanceof AppException => [$exception->getStatusCode(), $exception->getMessage()],
-            $exception instanceof HttpNotFoundException => [404, 'La página o recurso solicitado no existe.'],
-            $exception instanceof HttpMethodNotAllowedException => [405, 'Método no permitido.'],
-            default => [500, $displayErrorDetails ? $exception->getMessage() : 'Error interno del servidor.'],
-        };
-
-        $response = $app->getResponseFactory()->createResponse();
-        $esApi = str_starts_with($request->getUri()->getPath(), $basePath . '/api');
-
-        if ($esApi) {
-            $errores = $exception instanceof AppException ? $exception->getErrores() : null;
-
-            return JsonView::render($response, false, $mensaje, $errores, $status);
+        if ($exception instanceof AppException) {
+            $codigoEstado = $exception->obtenerCodigoEstado();
+            $mensaje = $exception->getMessage();
+        } elseif ($exception instanceof HttpNotFoundException) {
+            $codigoEstado = 404;
+            $mensaje = 'La página o recurso solicitado no existe.';
+        } elseif ($exception instanceof HttpMethodNotAllowedException) {
+            $codigoEstado = 405;
+            $mensaje = 'Método no permitido.';
+        } else {
+            $codigoEstado = 500;
+            $mensaje = $mostrarDetallesError ? $exception->getMessage() : 'Error interno del servidor.';
         }
 
-        return $container->get(HtmlView::class)->render($response, 'error', [
+        $response = $aplicacion->getResponseFactory()->createResponse();
+        $esApi = str_starts_with($request->getUri()->getPath(), $rutaBase . '/api');
+
+        if ($esApi) {
+            $errores = $exception instanceof AppException ? $exception->obtenerErrores() : null;
+
+            return JsonView::render($response, false, $mensaje, $errores, $codigoEstado);
+        }
+
+        return $contenedor->get(HtmlView::class)->render($response, 'error', [
             'titulo' => 'Error',
-            'status' => $status,
+            'codigoEstado' => $codigoEstado,
             'mensaje' => $mensaje,
-        ], $status);
+        ], $codigoEstado);
     }
 );
 
 // La API puede consumirse desde otro origen (CORS); las paginas web no lo necesitan.
-$allowedOrigins = array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGIN'] ?? ''));
+$origenesPermitidos = array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGIN'] ?? ''));
 
-$app->add(function (ServerRequestInterface $request, $handler) use ($allowedOrigins, $basePath): ResponseInterface {
+$aplicacion->add(function (ServerRequestInterface $request, $handler) use ($origenesPermitidos, $rutaBase): ResponseInterface {
     $response = $handler->handle($request);
 
-    if (!str_starts_with($request->getUri()->getPath(), $basePath . '/api')) {
+    if (!str_starts_with($request->getUri()->getPath(), $rutaBase . '/api')) {
         return $response;
     }
 
-    $origin = $request->getHeaderLine('Origin');
+    $origenSolicitud = $request->getHeaderLine('Origin');
 
-    if (in_array('*', $allowedOrigins, true)) {
+    if (in_array('*', $origenesPermitidos, true)) {
         $response = $response->withHeader('Access-Control-Allow-Origin', '*');
-    } elseif ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
-        $response = $response->withHeader('Access-Control-Allow-Origin', $origin)->withHeader('Vary', 'Origin');
+    } elseif ($origenSolicitud !== '' && in_array($origenSolicitud, $origenesPermitidos, true)) {
+        $response = $response->withHeader('Access-Control-Allow-Origin', $origenSolicitud)->withHeader('Vary', 'Origin');
     }
 
     return $response
@@ -92,16 +99,16 @@ $app->add(function (ServerRequestInterface $request, $handler) use ($allowedOrig
         ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
 });
 
-$app->options('/api/{rutas:.+}', function (ServerRequestInterface $request, ResponseInterface $response) {
+$aplicacion->options('/api/{rutas:.+}', function (ServerRequestInterface $request, ResponseInterface $response) {
     return $response;
 });
 
-(require __DIR__ . '/../app/Routes/api.php')($app);
-(require __DIR__ . '/../app/Routes/web.php')($app);
+(require __DIR__ . '/../app/Routes/api.php')($aplicacion);
+(require __DIR__ . '/../app/Routes/web.php')($aplicacion);
 
 // Sin esto, la ruta OPTIONS comodin hace que una URL inexistente de la API responda 405.
-$app->map(['GET', 'POST', 'PUT', 'DELETE'], '/api/{rutas:.+}', function (ServerRequestInterface $request) {
+$aplicacion->map(['GET', 'POST', 'PUT', 'DELETE'], '/api/{rutas:.+}', function (ServerRequestInterface $request) {
     throw new HttpNotFoundException($request);
 });
 
-$app->run();
+$aplicacion->run();

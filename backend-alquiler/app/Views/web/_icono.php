@@ -3,7 +3,7 @@
  * Icono SVG inline reutilizable (sin dependencias externas).
  *
  * @var \App\Views\HtmlView $this
- * @var string $nombre exito, error, info, alerta
+ * @var string $nombreIcono exito, error, info, alerta
  */
 
 $trazos = [
@@ -13,7 +13,7 @@ $trazos = [
     'alerta' => '<path d="M12 9v4"/><path d="M12 17h.01"/><path d="m10.29 3.86-8.18 14.18A1 1 0 0 0 3 19.5h18a1 1 0 0 0 .89-1.46L13.71 3.86a1 1 0 0 0-1.42 0z"/>',
 ];
 
-$trazo = $trazos[$nombre] ?? $trazos['info'];
+$trazo = $trazos[$nombreIcono] ?? $trazos['info'];
 ?>
 <svg class="icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
      stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><?= $trazo ?></svg>

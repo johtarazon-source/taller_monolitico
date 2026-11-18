@@ -3,25 +3,26 @@ import { ApiClient } from './services/ApiClient.js';
 import { AuthController } from './controllers/AuthController.js';
 
 /**
- * Arranque de la aplicacion: alterna entre la pantalla de login y el shell
- * con la navegacion entre modulos (vehiculos, clientes, reservas, disponibilidad).
+ * Arranque de la aplicacion: alterna entre la pantalla de inicio de sesion y el
+ * contenedor principal con la navegacion entre modulos (vehiculos, clientes,
+ * reservas, disponibilidad).
  */
 class App {
   constructor() {
-    this.vistaLogin = document.getElementById('vista-login');
-    this.shell = document.getElementById('shell');
+    this.vistaInicioSesion = document.getElementById('vista-inicio-sesion');
+    this.contenedorPrincipal = document.getElementById('contenedor-principal');
     this.usuarioActual = document.getElementById('usuario-actual');
-    this.enlacesNav = document.querySelectorAll('.nav__enlace');
+    this.enlacesNavegacion = document.querySelectorAll('.navegacion__enlace');
     this.vistasModulo = document.querySelectorAll('.vista-modulo');
 
-    ApiClient.onNoAutorizado = () => this.mostrarLogin();
+    ApiClient.alNoAutorizarse = () => this.mostrarInicioSesion();
 
     this.authController = new AuthController({
-      onAutenticado: (usuario) => this.mostrarShell(usuario),
-      onCerrarSesion: () => this.mostrarLogin(),
+      alAutenticarse: (usuario) => this.mostrarAplicacion(usuario),
+      alCerrarSesion: () => this.mostrarInicioSesion(),
     });
 
-    this.enlacesNav.forEach((enlace) => {
+    this.enlacesNavegacion.forEach((enlace) => {
       enlace.addEventListener('click', (evento) => {
         evento.preventDefault();
         this.navegarA(enlace.dataset.modulo);
@@ -33,22 +34,22 @@ class App {
 
   iniciar() {
     if (SessionService.haySesion()) {
-      this.mostrarShell(SessionService.obtenerUsuario());
+      this.mostrarAplicacion(SessionService.obtenerUsuario());
       return;
     }
 
-    this.mostrarLogin();
+    this.mostrarInicioSesion();
   }
 
-  mostrarLogin() {
-    this.vistaLogin.hidden = false;
-    this.shell.hidden = true;
+  mostrarInicioSesion() {
+    this.vistaInicioSesion.hidden = false;
+    this.contenedorPrincipal.hidden = true;
   }
 
-  mostrarShell(usuario) {
+  mostrarAplicacion(usuario) {
     this.usuarioActual.textContent = usuario;
-    this.vistaLogin.hidden = true;
-    this.shell.hidden = false;
+    this.vistaInicioSesion.hidden = true;
+    this.contenedorPrincipal.hidden = false;
     this.navegarA('vehiculos');
   }
 
@@ -57,7 +58,7 @@ class App {
       vista.hidden = vista.dataset.modulo !== modulo;
     });
 
-    this.enlacesNav.forEach((enlace) => {
+    this.enlacesNavegacion.forEach((enlace) => {
       const esActivo = enlace.dataset.modulo === modulo;
       enlace.classList.toggle('activo', esActivo);
 

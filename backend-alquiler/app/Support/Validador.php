@@ -17,15 +17,15 @@ final class Validador
     private array $errores = [];
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $datosEntrada
      */
-    public function __construct(private array $datos)
+    public function __construct(private array $datosEntrada)
     {
     }
 
-    public function texto(string $campo, string $etiqueta, int $max, bool $requerido = false): ?string
+    public function texto(string $campo, string $etiqueta, int $maximo, bool $requerido = false): ?string
     {
-        $valor = $this->datos[$campo] ?? null;
+        $valor = $this->datosEntrada[$campo] ?? null;
         $valor = is_scalar($valor) ? trim((string) $valor) : '';
 
         if ($valor === '') {
@@ -36,16 +36,16 @@ final class Validador
             return null;
         }
 
-        if (mb_strlen($valor) > $max) {
-            $this->errores[$campo] = "{$etiqueta} no puede superar {$max} caracteres.";
+        if (mb_strlen($valor) > $maximo) {
+            $this->errores[$campo] = "{$etiqueta} no puede superar {$maximo} caracteres.";
         }
 
         return $valor;
     }
 
-    public function correo(string $campo, string $etiqueta, int $max): ?string
+    public function correo(string $campo, string $etiqueta, int $maximo): ?string
     {
-        $valor = $this->texto($campo, $etiqueta, $max);
+        $valor = $this->texto($campo, $etiqueta, $maximo);
 
         if ($valor !== null && filter_var($valor, FILTER_VALIDATE_EMAIL) === false) {
             $this->errores[$campo] = "{$etiqueta} no tiene un formato válido.";
@@ -54,9 +54,9 @@ final class Validador
         return $valor;
     }
 
-    public function entero(string $campo, string $etiqueta, int $min, int $max, bool $requerido = false): ?int
+    public function entero(string $campo, string $etiqueta, int $minimo, int $maximo, bool $requerido = false): ?int
     {
-        $valor = $this->datos[$campo] ?? null;
+        $valor = $this->datosEntrada[$campo] ?? null;
 
         if ($valor === null || $valor === '') {
             if ($requerido) {
@@ -68,8 +68,8 @@ final class Validador
 
         $entero = filter_var($valor, FILTER_VALIDATE_INT);
 
-        if ($entero === false || $entero < $min || $entero > $max) {
-            $this->errores[$campo] = "{$etiqueta} debe ser un número entre {$min} y {$max}.";
+        if ($entero === false || $entero < $minimo || $entero > $maximo) {
+            $this->errores[$campo] = "{$etiqueta} debe ser un número entre {$minimo} y {$maximo}.";
 
             return null;
         }

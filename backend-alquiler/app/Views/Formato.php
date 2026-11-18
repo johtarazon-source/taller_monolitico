@@ -28,33 +28,33 @@ final class Formato
     ];
 
     /** "2026-11-13" -> "13 nov 2026" */
-    public static function fecha(?string $iso): string
+    public static function fecha(?string $fechaIso): string
     {
-        if ($iso === null || $iso === '') {
+        if ($fechaIso === null || $fechaIso === '') {
             return '-';
         }
 
-        $fecha = new DateTimeImmutable(substr($iso, 0, 10));
+        $fecha = new DateTimeImmutable(substr($fechaIso, 0, 10));
 
         return $fecha->format('j') . ' ' . self::MESES[(int) $fecha->format('n') - 1] . ' ' . $fecha->format('Y');
     }
 
     /** "2026-11-20" -> "20 nov" */
-    public static function fechaCorta(?string $iso): string
+    public static function fechaCorta(?string $fechaIso): string
     {
-        if ($iso === null || $iso === '') {
+        if ($fechaIso === null || $fechaIso === '') {
             return '-';
         }
 
-        $fecha = new DateTimeImmutable(substr($iso, 0, 10));
+        $fecha = new DateTimeImmutable(substr($fechaIso, 0, 10));
 
         return $fecha->format('j') . ' ' . self::MESES[(int) $fecha->format('n') - 1];
     }
 
     /** Dias incluidos entre dos fechas (ambos extremos cuentan). */
-    public static function dias(string $inicio, string $fin): int
+    public static function dias(string $fechaInicio, string $fechaFin): int
     {
-        return (new DateTimeImmutable($inicio))->diff(new DateTimeImmutable($fin))->days + 1;
+        return (new DateTimeImmutable($fechaInicio))->diff(new DateTimeImmutable($fechaFin))->days + 1;
     }
 
     public static function etiqueta(string $estado): string
@@ -63,12 +63,12 @@ final class Formato
     }
 
     /** Etiqueta de estado coloreada (HTML ya escapado). */
-    public static function badge(string $estado): string
+    public static function insignia(string $estado): string
     {
         $clase = htmlspecialchars($estado, ENT_QUOTES, 'UTF-8');
         $texto = htmlspecialchars(self::etiqueta($estado), ENT_QUOTES, 'UTF-8');
 
-        return "<span class=\"badge badge--{$clase}\">{$texto}</span>";
+        return "<span class=\"insignia insignia--{$clase}\">{$texto}</span>";
     }
 
     /**

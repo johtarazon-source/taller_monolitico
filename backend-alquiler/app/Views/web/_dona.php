@@ -12,16 +12,15 @@ $radio = 52;
 $circunferencia = 2 * M_PI * $radio;
 $arco = round($circunferencia * max(0, min(100, $porcentaje)) / 100, 2);
 ?>
-<div class="donut" role="img" aria-label="<?= $this->e("{$porcentaje}% de disponibilidad: {$disponibles} de {$total} vehículos disponibles") ?>">
-    <svg class="donut__svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
-        <circle class="donut__pista" cx="60" cy="60" r="<?= $radio ?>" />
+<div class="dona" role="img" aria-label="<?= $this->escapar("{$porcentaje}% de disponibilidad: {$disponibles} de {$total} vehículos disponibles") ?>">
+    <svg class="dona__svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+        <circle class="dona__pista" cx="60" cy="60" r="<?= $radio ?>" />
         <?php if ($arco > 0): ?>
-            <circle class="donut__arco" cx="60" cy="60" r="<?= $radio ?>"
-                    stroke-dasharray="<?= $this->e($arco) ?> <?= $this->e(round($circunferencia, 2)) ?>" />
+            <circle class="dona__arco" cx="60" cy="60" r="<?= $radio ?>"
+                    stroke-dasharray="<?= $this->escapar($arco) ?> <?= $this->escapar(round($circunferencia, 2)) ?>" />
         <?php endif; ?>
     </svg>
-    <div class="donut__centro" aria-hidden="true">
-        <strong class="donut__valor"><?= $this->e($porcentaje) ?>%</strong>
-        <span class="donut__etiqueta">Disponibilidad</span>
+    <div class="dona__centro" aria-hidden="true">
+        <strong class="dona__valor"><?= $this->escapar($porcentaje) ?>%</strong>
     </div>
 </div>

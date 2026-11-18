@@ -27,27 +27,27 @@ final class DisponibilidadService
     /**
      * Restringe una consulta de reservas a las activas que chocan con el rango.
      *
-     * @param Builder<Reserva> $query
+     * @param Builder<Reserva> $consulta
      * @return Builder<Reserva>
      */
-    public function filtrarConflictos(Builder $query, string $inicio, string $fin): Builder
+    public function filtrarConflictos(Builder $consulta, string $fechaInicio, string $fechaFin): Builder
     {
         $hoy = self::hoy();
 
-        return $query
+        return $consulta
             ->where('estado', Reserva::ACTIVA)
-            ->where('fecha_inicio', '<=', $fin)
-            ->where(function (Builder $q) use ($inicio, $hoy): void {
-                $q->where('fecha_fin', '>=', $inicio)
+            ->where('fecha_inicio', '<=', $fechaFin)
+            ->where(function (Builder $consultaFechas) use ($fechaInicio, $hoy): void {
+                $consultaFechas->where('fecha_fin', '>=', $fechaInicio)
                     ->orWhere('fecha_fin', '<', $hoy);
             });
     }
 
-    public function tieneConflicto(int $vehiculoId, string $inicio, string $fin): bool
+    public function tieneConflicto(int $vehiculoId, string $fechaInicio, string $fechaFin): bool
     {
-        $query = Reserva::query()->where('vehiculo_id', $vehiculoId);
+        $consulta = Reserva::query()->where('vehiculo_id', $vehiculoId);
 
-        return $this->filtrarConflictos($query, $inicio, $fin)->exists();
+        return $this->filtrarConflictos($consulta, $fechaInicio, $fechaFin)->exists();
     }
 
     /**
@@ -59,15 +59,15 @@ final class DisponibilidadService
     public function sincronizarEstados(): void
     {
         DB::connection()->update(
-            'UPDATE vehiculos v
-                SET v.estado = CASE
+            'UPDATE vehiculos vehiculo
+                SET vehiculo.estado = CASE
                     WHEN EXISTS (
-                        SELECT 1 FROM reservas r
-                         WHERE r.vehiculo_id = v.id
-                           AND r.estado = ?
-                           AND r.fecha_inicio <= ?
+                        SELECT 1 FROM reservas reserva
+                         WHERE reserva.vehiculo_id = vehiculo.id
+                           AND reserva.estado = ?
+                           AND reserva.fecha_inicio <= ?
                     ) THEN ? ELSE ? END
-              WHERE v.estado <> ?',
+              WHERE vehiculo.estado <> ?',
             [Reserva::ACTIVA, self::hoy(), Vehiculo::ALQUILADO, Vehiculo::DISPONIBLE, Vehiculo::MANTENIMIENTO]
         );
     }

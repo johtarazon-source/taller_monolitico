@@ -15,7 +15,7 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final class AuthController extends WebController
 {
-    public function __construct(HtmlView $vista, private AuthService $auth)
+    public function __construct(HtmlView $vista, private AuthService $servicioAutenticacion)
     {
         parent::__construct($vista);
     }
@@ -31,19 +31,19 @@ final class AuthController extends WebController
 
     public function login(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $datos = $this->formulario($request);
-        $usuario = trim((string) ($datos['usuario'] ?? ''));
-        $password = (string) ($datos['password'] ?? '');
+        $camposFormulario = $this->formulario($request);
+        $usuario = trim((string) ($camposFormulario['usuario'] ?? ''));
+        $contrasena = (string) ($camposFormulario['contrasena'] ?? '');
 
-        if ($usuario === '' || $password === '' || !$this->auth->credencialesValidas($usuario, $password)) {
-            $mensaje = $usuario === '' || $password === ''
+        if ($usuario === '' || $contrasena === '' || !$this->servicioAutenticacion->credencialesValidas($usuario, $contrasena)) {
+            $mensaje = $usuario === '' || $contrasena === ''
                 ? 'Usuario y contraseña son obligatorios.'
                 : 'Usuario o contraseña incorrectos.';
 
             return $this->render($response, 'login', [
                 'titulo' => 'Iniciar sesión',
-                'error' => $mensaje,
-                'usuario' => $usuario,
+                'mensajeError' => $mensaje,
+                'nombreUsuario' => $usuario,
             ], 401);
         }
 

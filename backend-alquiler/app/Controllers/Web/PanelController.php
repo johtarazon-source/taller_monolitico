@@ -14,7 +14,7 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final class PanelController extends WebController
 {
-    public function __construct(HtmlView $vista, private ReporteService $reportes)
+    public function __construct(HtmlView $vista, private ReporteService $servicioReportes)
     {
         parent::__construct($vista);
     }
@@ -24,7 +24,7 @@ final class PanelController extends WebController
         return $this->render($response, 'panel', [
             'titulo' => 'Panel general',
             'seccion' => 'panel',
-            'resumen' => $this->reportes->resumen(),
+            'resumen' => $this->servicioReportes->resumen(),
         ]);
     }
 }

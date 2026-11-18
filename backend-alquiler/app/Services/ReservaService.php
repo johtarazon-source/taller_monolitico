@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Collection;
  */
 final class ReservaService
 {
-    public function __construct(private DisponibilidadService $disponibilidad)
+    public function __construct(private DisponibilidadService $servicioDisponibilidad)
     {
     }
 
@@ -29,26 +29,26 @@ final class ReservaService
      */
     public function listar(array $filtros): Collection
     {
-        $this->disponibilidad->sincronizarEstados();
+        $this->servicioDisponibilidad->sincronizarEstados();
 
-        $query = Reserva::query()
+        $consulta = Reserva::query()
             ->with(['cliente', 'vehiculo'])
             ->orderByDesc('fecha_inicio')
             ->orderByDesc('id');
 
         if (!empty($filtros['estado'])) {
-            $query->where('estado', (string) $filtros['estado']);
+            $consulta->where('estado', (string) $filtros['estado']);
         }
 
         if (!empty($filtros['cliente_id'])) {
-            $query->where('cliente_id', (int) $filtros['cliente_id']);
+            $consulta->where('cliente_id', (int) $filtros['cliente_id']);
         }
 
         if (!empty($filtros['vehiculo_id'])) {
-            $query->where('vehiculo_id', (int) $filtros['vehiculo_id']);
+            $consulta->where('vehiculo_id', (int) $filtros['vehiculo_id']);
         }
 
-        return $query->get();
+        return $consulta->get();
     }
 
     public function obtener(int $id): Reserva
@@ -65,41 +65,41 @@ final class ReservaService
     /**
      * Crea una reserva validando fechas, cliente, vehiculo y cruces.
      *
-     * @param array<string, mixed> $datos cliente_id, vehiculo_id, fecha_inicio, fecha_fin
+     * @param array<string, mixed> $datosReserva cliente_id, vehiculo_id, fecha_inicio, fecha_fin
      */
-    public function crear(array $datos): Reserva
+    public function crear(array $datosReserva): Reserva
     {
-        $v = new Validador($datos);
-        $clienteId = $v->entero('cliente_id', 'El cliente', 1, PHP_INT_MAX, true);
-        $vehiculoId = $v->entero('vehiculo_id', 'El vehículo', 1, PHP_INT_MAX, true);
-        $inicio = $v->fecha('fecha_inicio', 'La fecha de inicio', true);
-        $fin = $v->fecha('fecha_fin', 'La fecha de fin', true);
+        $validador = new Validador($datosReserva);
+        $clienteId = $validador->entero('cliente_id', 'El cliente', 1, PHP_INT_MAX, true);
+        $vehiculoId = $validador->entero('vehiculo_id', 'El vehículo', 1, PHP_INT_MAX, true);
+        $fechaInicio = $validador->fecha('fecha_inicio', 'La fecha de inicio', true);
+        $fechaFin = $validador->fecha('fecha_fin', 'La fecha de fin', true);
 
-        if ($inicio !== null && $inicio < DisponibilidadService::hoy()) {
-            $v->agregarError('fecha_inicio', 'La fecha de inicio no puede ser anterior a hoy.');
+        if ($fechaInicio !== null && $fechaInicio < DisponibilidadService::hoy()) {
+            $validador->agregarError('fecha_inicio', 'La fecha de inicio no puede ser anterior a hoy.');
         }
 
-        if ($inicio !== null && $fin !== null && $fin < $inicio) {
-            $v->agregarError('fecha_fin', 'La fecha de fin no puede ser anterior a la de inicio.');
+        if ($fechaInicio !== null && $fechaFin !== null && $fechaFin < $fechaInicio) {
+            $validador->agregarError('fecha_fin', 'La fecha de fin no puede ser anterior a la de inicio.');
         }
 
         $cliente = $clienteId !== null ? Cliente::find($clienteId) : null;
 
         if ($clienteId !== null && $cliente === null) {
-            $v->agregarError('cliente_id', 'El cliente no existe.');
+            $validador->agregarError('cliente_id', 'El cliente no existe.');
         } elseif ($cliente !== null && trim((string) $cliente->numero_licencia) === '') {
-            $v->agregarError('cliente_id', 'El cliente no tiene número de licencia registrado; no puede alquilar.');
+            $validador->agregarError('cliente_id', 'El cliente no tiene número de licencia registrado; no puede alquilar.');
         }
 
         if ($vehiculoId !== null && !Vehiculo::query()->whereKey($vehiculoId)->exists()) {
-            $v->agregarError('vehiculo_id', 'El vehículo no existe.');
+            $validador->agregarError('vehiculo_id', 'El vehículo no existe.');
         }
 
-        $v->verificar();
+        $validador->verificar();
 
-        $this->disponibilidad->sincronizarEstados();
+        $this->servicioDisponibilidad->sincronizarEstados();
 
-        $reserva = DB::connection()->transaction(function () use ($clienteId, $vehiculoId, $inicio, $fin): Reserva {
+        $reserva = DB::connection()->transaction(function () use ($clienteId, $vehiculoId, $fechaInicio, $fechaFin): Reserva {
             // Bloquea la fila del vehiculo para que dos reservas simultaneas no se crucen.
             $vehiculo = Vehiculo::query()->whereKey($vehiculoId)->lockForUpdate()->firstOrFail();
 
@@ -107,20 +107,20 @@ final class ReservaService
                 throw new ConflictException('El vehículo está en mantenimiento y no se puede reservar.');
             }
 
-            if ($this->disponibilidad->tieneConflicto($vehiculoId, $inicio, $fin)) {
+            if ($this->servicioDisponibilidad->tieneConflicto($vehiculoId, $fechaInicio, $fechaFin)) {
                 throw new ConflictException('El vehículo ya tiene una reserva activa que se cruza con esas fechas.');
             }
 
             return Reserva::create([
                 'cliente_id' => $clienteId,
                 'vehiculo_id' => $vehiculoId,
-                'fecha_inicio' => $inicio,
-                'fecha_fin' => $fin,
+                'fecha_inicio' => $fechaInicio,
+                'fecha_fin' => $fechaFin,
                 'estado' => Reserva::ACTIVA,
             ]);
         });
 
-        $this->disponibilidad->sincronizarEstados();
+        $this->servicioDisponibilidad->sincronizarEstados();
 
         return $this->obtener($reserva->id);
     }
@@ -145,7 +145,7 @@ final class ReservaService
             }
         });
 
-        $this->disponibilidad->sincronizarEstados();
+        $this->servicioDisponibilidad->sincronizarEstados();
 
         return $this->obtener($id);
     }
@@ -155,7 +155,7 @@ final class ReservaService
         $reserva = $this->obtenerActiva($id);
         $reserva->update(['estado' => Reserva::CANCELADA]);
 
-        $this->disponibilidad->sincronizarEstados();
+        $this->servicioDisponibilidad->sincronizarEstados();
 
         return $this->obtener($id);
     }

@@ -19,19 +19,19 @@ final class AuthMiddleware implements MiddlewareInterface
 {
     public const ATRIBUTO_TOKEN = 'token';
 
-    public function __construct(private AuthService $authService)
+    public function __construct(private AuthService $servicioAutenticacion)
     {
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $header = $request->getHeaderLine('Authorization');
-        $token = str_starts_with($header, 'Bearer ') ? substr($header, 7) : '';
+        $cabeceraAutorizacion = $request->getHeaderLine('Authorization');
+        $tokenAcceso = str_starts_with($cabeceraAutorizacion, 'Bearer ') ? substr($cabeceraAutorizacion, 7) : '';
 
-        if (!$this->authService->validarToken($token)) {
+        if (!$this->servicioAutenticacion->validarToken($tokenAcceso)) {
             throw new UnauthorizedException('Token invalido o expirado.');
         }
 
-        return $handler->handle($request->withAttribute(self::ATRIBUTO_TOKEN, $token));
+        return $handler->handle($request->withAttribute(self::ATRIBUTO_TOKEN, $tokenAcceso));
     }
 }

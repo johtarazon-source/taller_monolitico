@@ -6,12 +6,12 @@ namespace App\Support;
 
 /**
  * Envoltura de la sesion PHP de la interfaz web: usuario autenticado,
- * mensajes flash (se muestran una sola vez) y token CSRF de los formularios.
+ * mensajes temporales (se muestran una sola vez) y token CSRF de los formularios.
  */
 final class Sesion
 {
     private const USUARIO = 'usuario';
-    private const FLASH = 'flash';
+    private const MENSAJES_TEMPORALES = 'mensajes_temporales';
     private const CSRF = 'csrf';
 
     public static function iniciar(string $rutaCookie): void
@@ -50,18 +50,18 @@ final class Sesion
     /**
      * @param 'exito'|'error' $tipo
      */
-    public static function flash(string $tipo, string $mensaje): void
+    public static function mensajeTemporal(string $tipo, string $mensaje): void
     {
-        $_SESSION[self::FLASH][] = ['tipo' => $tipo, 'mensaje' => $mensaje];
+        $_SESSION[self::MENSAJES_TEMPORALES][] = ['tipo' => $tipo, 'mensaje' => $mensaje];
     }
 
     /**
      * @return list<array{tipo: string, mensaje: string}>
      */
-    public static function consumirFlash(): array
+    public static function consumirMensajesTemporales(): array
     {
-        $mensajes = $_SESSION[self::FLASH] ?? [];
-        unset($_SESSION[self::FLASH]);
+        $mensajes = $_SESSION[self::MENSAJES_TEMPORALES] ?? [];
+        unset($_SESSION[self::MENSAJES_TEMPORALES]);
 
         return $mensajes;
     }
@@ -73,8 +73,8 @@ final class Sesion
         return $_SESSION[self::CSRF];
     }
 
-    public static function csrfValido(string $token): bool
+    public static function csrfValido(string $tokenRecibido): bool
     {
-        return isset($_SESSION[self::CSRF]) && hash_equals($_SESSION[self::CSRF], $token);
+        return isset($_SESSION[self::CSRF]) && hash_equals($_SESSION[self::CSRF], $tokenRecibido);
     }
 }

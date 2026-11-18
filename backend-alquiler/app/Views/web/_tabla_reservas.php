@@ -29,31 +29,31 @@ $hoy = DisponibilidadService::hoy();
                 <th>Hasta</th>
                 <th>Días</th>
                 <th>Estado</th>
-                <?php if ($conAcciones): ?><th><span class="sr-only">Acciones</span></th><?php endif; ?>
+                <?php if ($conAcciones): ?><th><span class="solo-lectores-pantalla">Acciones</span></th><?php endif; ?>
             </tr>
         </thead>
         <tbody>
             <?php foreach ($reservas as $reserva): ?>
-                <?php $visible = Formato::estadoReserva($reserva); ?>
-                <tr<?= $visible === 'vencida' ? ' class="tabla__fila--alerta"' : '' ?>>
-                    <td data-titulo="#"><?= $this->e($reserva->id) ?></td>
+                <?php $estadoVisible = Formato::estadoReserva($reserva); ?>
+                <tr<?= $estadoVisible === 'vencida' ? ' class="tabla__fila--alerta"' : '' ?>>
+                    <td data-titulo="#"><?= $this->escapar($reserva->id) ?></td>
                     <?php if ($conCliente): ?>
-                        <td data-titulo="Cliente"><?= $this->e($reserva->cliente?->nombre) ?></td>
+                        <td data-titulo="Cliente"><?= $this->escapar($reserva->cliente?->nombre) ?></td>
                     <?php endif; ?>
                     <?php if ($conVehiculo): ?>
-                        <td data-titulo="Vehículo"><?= $this->e(Formato::vehiculo($reserva->vehiculo)) ?></td>
+                        <td data-titulo="Vehículo"><?= $this->escapar(Formato::vehiculo($reserva->vehiculo)) ?></td>
                     <?php endif; ?>
-                    <td data-titulo="Desde"><?= $this->e(Formato::fecha($reserva->fecha_inicio)) ?></td>
-                    <td data-titulo="Hasta"><?= $this->e(Formato::fecha($reserva->fecha_fin)) ?></td>
-                    <td data-titulo="Días"><?= $this->e(Formato::dias($reserva->fecha_inicio, $reserva->fecha_fin)) ?></td>
-                    <td data-titulo="Estado"><?= Formato::badge($visible) ?></td>
+                    <td data-titulo="Desde"><?= $this->escapar(Formato::fecha($reserva->fecha_inicio)) ?></td>
+                    <td data-titulo="Hasta"><?= $this->escapar(Formato::fecha($reserva->fecha_fin)) ?></td>
+                    <td data-titulo="Días"><?= $this->escapar(Formato::dias($reserva->fecha_inicio, $reserva->fecha_fin)) ?></td>
+                    <td data-titulo="Estado"><?= Formato::insignia($estadoVisible) ?></td>
                     <?php if ($conAcciones): ?>
                         <td class="tabla__acciones">
                             <?php if ($reserva->estado === Reserva::ACTIVA): ?>
                                 <?php if ($reserva->fecha_inicio <= $hoy): ?>
-                                    <a class="btn btn--chico btn--primario" href="<?= $this->e($this->url("/reservas/{$reserva->id}/devolucion")) ?>">Registrar devolución</a>
+                                    <a class="boton boton--chico boton--primario" href="<?= $this->escapar($this->url("/reservas/{$reserva->id}/devolucion")) ?>">Registrar devolución</a>
                                 <?php endif; ?>
-                                <a class="btn btn--chico btn--texto-peligro" href="<?= $this->e($this->url("/reservas/{$reserva->id}/cancelacion")) ?>">Cancelar</a>
+                                <a class="boton boton--chico boton--texto-peligro" href="<?= $this->escapar($this->url("/reservas/{$reserva->id}/cancelacion")) ?>">Cancelar</a>
                             <?php endif; ?>
                         </td>
                     <?php endif; ?>

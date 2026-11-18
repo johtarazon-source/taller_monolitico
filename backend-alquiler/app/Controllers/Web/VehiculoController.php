@@ -16,7 +16,7 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final class VehiculoController extends WebController
 {
-    public function __construct(HtmlView $vista, private VehiculoService $vehiculos)
+    public function __construct(HtmlView $vista, private VehiculoService $servicioVehiculos)
     {
         parent::__construct($vista);
     }
@@ -29,7 +29,7 @@ final class VehiculoController extends WebController
             'titulo' => 'Vehículos',
             'seccion' => 'vehiculos',
             'filtros' => $filtros,
-            'vehiculos' => $this->vehiculos->listar($filtros),
+            'vehiculos' => $this->servicioVehiculos->listar($filtros),
         ]);
     }
 
@@ -40,12 +40,12 @@ final class VehiculoController extends WebController
 
     public function guardar(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $datos = $this->formulario($request);
+        $camposFormulario = $this->formulario($request);
 
         try {
-            $this->vehiculos->crear($datos);
-        } catch (ValidationException $e) {
-            return $this->formularioVehiculo($response, $datos, null, $e->getErrores() ?? [], 422);
+            $this->servicioVehiculos->crear($camposFormulario);
+        } catch (ValidationException $excepcionValidacion) {
+            return $this->formularioVehiculo($response, $camposFormulario, null, $excepcionValidacion->obtenerErrores() ?? [], 422);
         }
 
         $this->exito('Vehículo registrado correctamente.');
@@ -55,26 +55,26 @@ final class VehiculoController extends WebController
 
     public function editar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehiculo = $this->vehiculos->obtener((int) $args['id']);
+        $vehiculo = $this->servicioVehiculos->obtener((int) $args['id']);
 
         return $this->formularioVehiculo($response, $vehiculo->toArray(), $vehiculo->id, [], 200, $vehiculo->estado);
     }
 
     public function actualizar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $id = (int) $args['id'];
-        $datos = $this->formulario($request);
+        $vehiculoId = (int) $args['id'];
+        $camposFormulario = $this->formulario($request);
 
         try {
-            $this->vehiculos->actualizar($id, $datos);
-        } catch (ValidationException $e) {
-            $estadoActual = $this->vehiculos->obtener($id)->estado;
+            $this->servicioVehiculos->actualizar($vehiculoId, $camposFormulario);
+        } catch (ValidationException $excepcionValidacion) {
+            $estadoActual = $this->servicioVehiculos->obtener($vehiculoId)->estado;
 
-            return $this->formularioVehiculo($response, $datos, $id, $e->getErrores() ?? [], 422, $estadoActual);
-        } catch (AppException $e) {
-            $this->error($e->getMessage());
+            return $this->formularioVehiculo($response, $camposFormulario, $vehiculoId, $excepcionValidacion->obtenerErrores() ?? [], 422, $estadoActual);
+        } catch (AppException $excepcionAplicacion) {
+            $this->error($excepcionAplicacion->getMessage());
 
-            return $this->redirigir($response, "/vehiculos/{$id}/editar");
+            return $this->redirigir($response, "/vehiculos/{$vehiculoId}/editar");
         }
 
         $this->exito('Vehículo actualizado correctamente.');
@@ -84,26 +84,26 @@ final class VehiculoController extends WebController
 
     public function confirmarEliminar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $vehiculo = $this->vehiculos->obtener((int) $args['id']);
+        $vehiculo = $this->servicioVehiculos->obtener((int) $args['id']);
 
         return $this->render($response, 'confirmar', [
             'titulo' => 'Eliminar vehículo',
             'seccion' => 'vehiculos',
             'mensaje' => "¿Eliminar {$vehiculo->marca} {$vehiculo->modelo}? Esta acción no se puede deshacer.",
-            'accion' => "/vehiculos/{$vehiculo->id}/eliminar",
-            'volver' => '/vehiculos',
+            'rutaAccion' => "/vehiculos/{$vehiculo->id}/eliminar",
+            'rutaVolver' => '/vehiculos',
             'textoBoton' => 'Eliminar',
-            'peligro' => true,
+            'esPeligrosa' => true,
         ]);
     }
 
     public function eliminar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $this->vehiculos->eliminar((int) $args['id']);
+            $this->servicioVehiculos->eliminar((int) $args['id']);
             $this->exito('Vehículo eliminado correctamente.');
-        } catch (AppException $e) {
-            $this->error($e->getMessage());
+        } catch (AppException $excepcionAplicacion) {
+            $this->error($excepcionAplicacion->getMessage());
         }
 
         return $this->redirigir($response, '/vehiculos');
@@ -111,36 +111,36 @@ final class VehiculoController extends WebController
 
     public function historial(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $id = (int) $args['id'];
+        $vehiculoId = (int) $args['id'];
 
         return $this->render($response, 'historial', [
             'titulo' => 'Historial del vehículo',
             'seccion' => 'vehiculos',
-            'tipo' => 'vehiculo',
-            'entidad' => $this->vehiculos->obtener($id),
-            'reservas' => $this->vehiculos->historial($id),
+            'tipoHistorial' => 'vehiculo',
+            'propietarioHistorial' => $this->servicioVehiculos->obtener($vehiculoId),
+            'reservas' => $this->servicioVehiculos->historial($vehiculoId),
         ]);
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $camposFormulario
      * @param array<string, string> $errores
      */
     private function formularioVehiculo(
         ResponseInterface $response,
-        array $datos,
-        ?int $id = null,
+        array $camposFormulario,
+        ?int $vehiculoId = null,
         array $errores = [],
-        int $status = 200,
+        int $codigoEstado = 200,
         ?string $estadoActual = null
     ): ResponseInterface {
         return $this->render($response, 'vehiculos/formulario', [
-            'titulo' => $id === null ? 'Nuevo vehículo' : 'Editar vehículo',
+            'titulo' => $vehiculoId === null ? 'Nuevo vehículo' : 'Editar vehículo',
             'seccion' => 'vehiculos',
-            'id' => $id,
-            'datos' => $datos,
+            'vehiculoId' => $vehiculoId,
+            'datosFormulario' => $camposFormulario,
             'errores' => $errores,
             'estadoActual' => $estadoActual,
-        ], $status);
+        ], $codigoEstado);
     }
 }

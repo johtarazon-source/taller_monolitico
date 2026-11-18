@@ -2,7 +2,7 @@
 /**
  * @var \App\Views\HtmlView $this
  * @var iterable<\App\Models\Cliente> $clientes
- * @var string $buscar
+ * @var string $terminoBusqueda
  */
 ?>
 <section class="pagina">
@@ -11,16 +11,16 @@
             <h1>Clientes</h1>
             <p class="texto-suave">Personas registradas para alquilar vehículos.</p>
         </div>
-        <a class="btn btn--primario" href="<?= $this->e($this->url('/clientes/nuevo')) ?>">Nuevo cliente</a>
+        <a class="boton boton--primario" href="<?= $this->escapar($this->url('/clientes/nuevo')) ?>">Nuevo cliente</a>
     </header>
 
-    <form class="filtros" method="get" action="<?= $this->e($this->url('/clientes')) ?>" role="search">
+    <form class="filtros" method="get" action="<?= $this->escapar($this->url('/clientes')) ?>" role="search">
         <div class="campo filtros__campo">
-            <label class="campo__etiqueta" for="c-buscar">Buscar</label>
-            <input class="campo__control" id="c-buscar" name="buscar" type="search"
-                   placeholder="Nombre, correo, teléfono o licencia" value="<?= $this->e($buscar) ?>">
+            <label class="campo__etiqueta" for="clientes-termino-busqueda">Buscar</label>
+            <input class="campo__control" id="clientes-termino-busqueda" name="buscar" type="search"
+                   placeholder="Nombre, correo, teléfono o licencia" value="<?= $this->escapar($terminoBusqueda) ?>">
         </div>
-        <button type="submit" class="btn btn--secundario">Buscar</button>
+        <button type="submit" class="boton boton--secundario">Buscar</button>
     </form>
 
     <?php if (count($clientes) === 0): ?>

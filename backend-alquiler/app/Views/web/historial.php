@@ -3,31 +3,31 @@
  * Historial de alquileres de un vehiculo o de un cliente.
  *
  * @var \App\Views\HtmlView $this
- * @var 'vehiculo'|'cliente' $tipo
- * @var \App\Models\Vehiculo|\App\Models\Cliente $entidad
+ * @var 'vehiculo'|'cliente' $tipoHistorial
+ * @var \App\Models\Vehiculo|\App\Models\Cliente $propietarioHistorial
  * @var \Illuminate\Support\Collection<int, \App\Models\Reserva> $reservas
  */
 
 use App\Views\Formato;
 
-$esVehiculo = $tipo === 'vehiculo';
-$nombre = $esVehiculo ? Formato::vehiculo($entidad) : $entidad->nombre;
+$esVehiculo = $tipoHistorial === 'vehiculo';
+$nombreEntidad = $esVehiculo ? Formato::vehiculo($propietarioHistorial) : $propietarioHistorial->nombre;
 $diasAlquilado = $reservas
     ->where('estado', '!=', 'cancelada')
-    ->sum(fn ($r) => Formato::dias($r->fecha_inicio, $r->fecha_fin));
+    ->sum(fn ($reserva) => Formato::dias($reserva->fecha_inicio, $reserva->fecha_fin));
 ?>
 <section class="pagina">
     <header class="pagina__cabecera">
         <div>
-            <p><a href="<?= $this->e($this->url($esVehiculo ? '/vehiculos' : '/clientes')) ?>">Volver a <?= $esVehiculo ? 'Vehículos' : 'Clientes' ?></a></p>
-            <h1>Historial: <?= $this->e($nombre) ?></h1>
+            <p><a href="<?= $this->escapar($this->url($esVehiculo ? '/vehiculos' : '/clientes')) ?>">Volver a <?= $esVehiculo ? 'Vehículos' : 'Clientes' ?></a></p>
+            <h1>Historial: <?= $this->escapar($nombreEntidad) ?></h1>
             <p class="texto-suave">
                 <?php if ($esVehiculo): ?>
-                    <?= $this->e($entidad->categoria ?: 'Sin categoría') ?> · <?= Formato::badge($entidad->estado) ?>
+                    <?= $this->escapar($propietarioHistorial->categoria ?: 'Sin categoría') ?> · <?= Formato::insignia($propietarioHistorial->estado) ?>
                 <?php else: ?>
-                    Licencia: <?= $this->e($entidad->numero_licencia ?: 'sin registrar') ?>
-                    <?php if ($entidad->correo || $entidad->telefono): ?>
-                        · <?= $this->e($entidad->correo ?: $entidad->telefono) ?>
+                    Licencia: <?= $this->escapar($propietarioHistorial->numero_licencia ?: 'sin registrar') ?>
+                    <?php if ($propietarioHistorial->correo || $propietarioHistorial->telefono): ?>
+                        · <?= $this->escapar($propietarioHistorial->correo ?: $propietarioHistorial->telefono) ?>
                     <?php endif; ?>
                 <?php endif; ?>
             </p>

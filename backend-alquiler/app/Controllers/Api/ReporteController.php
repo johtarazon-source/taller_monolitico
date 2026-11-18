@@ -13,12 +13,12 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final class ReporteController extends BaseController
 {
-    public function __construct(private ReporteService $reportes)
+    public function __construct(private ReporteService $servicioReportes)
     {
     }
 
     public function resumen(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        return $this->json($response, true, 'Resumen obtenido.', $this->reportes->resumen());
+        return $this->json($response, true, 'Resumen obtenido.', $this->servicioReportes->resumen());
     }
 }

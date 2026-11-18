@@ -5,7 +5,7 @@
  * @var string $estado
  */
 
-$opciones = ['activa' => 'Activas', 'completada' => 'Completadas', 'cancelada' => 'Canceladas', 'todas' => 'Todas'];
+$opcionesEstado = ['activa' => 'Activas', 'completada' => 'Completadas', 'cancelada' => 'Canceladas', 'todas' => 'Todas'];
 ?>
 <section class="pagina">
     <header class="pagina__cabecera">
@@ -13,19 +13,19 @@ $opciones = ['activa' => 'Activas', 'completada' => 'Completadas', 'cancelada' =
             <h1>Reservas</h1>
             <p class="texto-suave">Alquileres registrados, devoluciones y cancelaciones.</p>
         </div>
-        <a class="btn btn--primario" href="<?= $this->e($this->url('/reservas/nueva')) ?>">Nueva reserva</a>
+        <a class="boton boton--primario" href="<?= $this->escapar($this->url('/reservas/nueva')) ?>">Nueva reserva</a>
     </header>
 
-    <form class="filtros" method="get" action="<?= $this->e($this->url('/reservas')) ?>">
+    <form class="filtros" method="get" action="<?= $this->escapar($this->url('/reservas')) ?>">
         <div class="campo filtros__campo">
-            <label class="campo__etiqueta" for="r-estado">Estado</label>
-            <select class="campo__control" id="r-estado" name="estado">
-                <?php foreach ($opciones as $valor => $texto): ?>
-                    <option value="<?= $this->e($valor) ?>"<?= $valor === $estado ? ' selected' : '' ?>><?= $this->e($texto) ?></option>
+            <label class="campo__etiqueta" for="reservas-estado">Estado</label>
+            <select class="campo__control" id="reservas-estado" name="estado">
+                <?php foreach ($opcionesEstado as $valor => $texto): ?>
+                    <option value="<?= $this->escapar($valor) ?>"<?= $valor === $estado ? ' selected' : '' ?>><?= $this->escapar($texto) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
-        <button type="submit" class="btn btn--secundario">Filtrar</button>
+        <button type="submit" class="boton boton--secundario">Filtrar</button>
     </form>
 
     <?php if (count($reservas) === 0): ?>

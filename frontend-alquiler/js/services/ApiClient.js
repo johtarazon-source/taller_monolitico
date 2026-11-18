@@ -1,13 +1,13 @@
-import { API_BASE_URL } from '../config.js';
+import { URL_BASE_API } from '../config.js';
 import { SessionService } from './SessionService.js';
 
 /**
  * Error de la API con el mensaje y los datos de error que devuelve el backend.
  */
 export class ApiError extends Error {
-  constructor(mensaje, status, errores = null) {
+  constructor(mensaje, codigoEstado, errores = null) {
     super(mensaje);
-    this.status = status;
+    this.codigoEstado = codigoEstado;
     this.errores = errores;
   }
 }
@@ -17,15 +17,15 @@ export class ApiError extends Error {
  * formato estandar { ok, mensaje, data } y maneja la expiracion de sesion (401).
  */
 export class ApiClient {
-  static onNoAutorizado = null;
+  static alNoAutorizarse = null;
 
-  static async solicitar(ruta, { metodo = 'GET', cuerpo = null, query = null } = {}) {
-    const url = new URL(`${API_BASE_URL}${ruta}`);
+  static async solicitar(ruta, { metodo = 'GET', cuerpo = null, parametrosConsulta = null } = {}) {
+    const direccion = new URL(`${URL_BASE_API}${ruta}`);
 
-    if (query) {
-      Object.entries(query)
+    if (parametrosConsulta) {
+      Object.entries(parametrosConsulta)
         .filter(([, valor]) => valor !== null && valor !== undefined && valor !== '')
-        .forEach(([clave, valor]) => url.searchParams.set(clave, valor));
+        .forEach(([clave, valor]) => direccion.searchParams.set(clave, valor));
     }
 
     const cabeceras = { 'Content-Type': 'application/json' };
@@ -35,33 +35,33 @@ export class ApiClient {
       cabeceras.Authorization = `Bearer ${token}`;
     }
 
-    const respuesta = await fetch(url.toString(), {
+    const respuesta = await fetch(direccion.toString(), {
       method: metodo,
       headers: cabeceras,
       body: cuerpo ? JSON.stringify(cuerpo) : null,
     });
 
-    const payload = await respuesta.json().catch(() => null);
+    const cuerpoRespuesta = await respuesta.json().catch(() => null);
 
     if (respuesta.status === 401) {
       SessionService.limpiar();
 
-      if (typeof ApiClient.onNoAutorizado === 'function') {
-        ApiClient.onNoAutorizado();
+      if (typeof ApiClient.alNoAutorizarse === 'function') {
+        ApiClient.alNoAutorizarse();
       }
     }
 
-    if (!respuesta.ok || !payload?.ok) {
-      const mensaje = payload?.mensaje ?? 'Ocurrio un error al comunicarse con el servidor.';
+    if (!respuesta.ok || !cuerpoRespuesta?.ok) {
+      const mensaje = cuerpoRespuesta?.mensaje ?? 'Ocurrio un error al comunicarse con el servidor.';
 
-      throw new ApiError(mensaje, respuesta.status, payload?.data ?? null);
+      throw new ApiError(mensaje, respuesta.status, cuerpoRespuesta?.data ?? null);
     }
 
-    return payload.data;
+    return cuerpoRespuesta.data;
   }
 
-  static get(ruta, query) {
-    return ApiClient.solicitar(ruta, { metodo: 'GET', query });
+  static get(ruta, parametrosConsulta) {
+    return ApiClient.solicitar(ruta, { metodo: 'GET', parametrosConsulta });
   }
 
   static post(ruta, cuerpo) {

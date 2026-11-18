@@ -22,9 +22,9 @@ final class ReservaController extends WebController
 {
     public function __construct(
         HtmlView $vista,
-        private ReservaService $reservas,
-        private ClienteService $clientes,
-        private VehiculoService $vehiculos
+        private ReservaService $servicioReservas,
+        private ClienteService $servicioClientes,
+        private VehiculoService $servicioVehiculos
     ) {
         parent::__construct($vista);
     }
@@ -38,7 +38,7 @@ final class ReservaController extends WebController
             'titulo' => 'Reservas',
             'seccion' => 'reservas',
             'estado' => $estado,
-            'reservas' => $this->reservas->listar(['estado' => $estado === 'todas' ? '' : $estado]),
+            'reservas' => $this->servicioReservas->listar(['estado' => $estado === 'todas' ? '' : $estado]),
         ]);
     }
 
@@ -48,26 +48,26 @@ final class ReservaController extends WebController
      */
     public function nueva(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $query = $request->getQueryParams();
+        $parametrosConsulta = $request->getQueryParams();
 
         return $this->formularioReserva($response, [
-            'fecha_inicio' => $query['fecha_inicio'] ?? DisponibilidadService::hoy(),
-            'fecha_fin' => $query['fecha_fin'] ?? null,
-            'vehiculo_id' => $query['vehiculo_id'] ?? null,
-            'cliente_id' => $query['cliente_id'] ?? null,
-        ], isset($query['fecha_fin']));
+            'fecha_inicio' => $parametrosConsulta['fecha_inicio'] ?? DisponibilidadService::hoy(),
+            'fecha_fin' => $parametrosConsulta['fecha_fin'] ?? null,
+            'vehiculo_id' => $parametrosConsulta['vehiculo_id'] ?? null,
+            'cliente_id' => $parametrosConsulta['cliente_id'] ?? null,
+        ], isset($parametrosConsulta['fecha_fin']));
     }
 
     public function guardar(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $datos = $this->formulario($request);
+        $camposFormulario = $this->formulario($request);
 
         try {
-            $this->reservas->crear($datos);
-        } catch (ValidationException $e) {
-            return $this->formularioReserva($response, $datos, true, $e->getErrores() ?? [], 422);
-        } catch (AppException $e) {
-            return $this->formularioReserva($response, $datos, true, ['general' => $e->getMessage()], $e->getStatusCode());
+            $this->servicioReservas->crear($camposFormulario);
+        } catch (ValidationException $excepcionValidacion) {
+            return $this->formularioReserva($response, $camposFormulario, true, $excepcionValidacion->obtenerErrores() ?? [], 422);
+        } catch (AppException $excepcionAplicacion) {
+            return $this->formularioReserva($response, $camposFormulario, true, ['general' => $excepcionAplicacion->getMessage()], $excepcionAplicacion->obtenerCodigoEstado());
         }
 
         $this->exito('Reserva registrada correctamente.');
@@ -77,29 +77,29 @@ final class ReservaController extends WebController
 
     public function confirmarDevolucion(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $reserva = $this->reservas->obtener((int) $args['id']);
+        $reserva = $this->servicioReservas->obtener((int) $args['id']);
 
         return $this->render($response, 'confirmar', [
             'titulo' => 'Registrar devolución',
             'seccion' => 'reservas',
             'mensaje' => "{$reserva->cliente->nombre} devuelve el " . Formato::vehiculo($reserva->vehiculo) . '.',
-            'accion' => "/reservas/{$reserva->id}/devolucion",
-            'volver' => '/reservas',
+            'rutaAccion' => "/reservas/{$reserva->id}/devolucion",
+            'rutaVolver' => '/reservas',
             'textoBoton' => 'Registrar devolución',
-            'peligro' => false,
+            'esPeligrosa' => false,
             'opcionMantenimiento' => true,
         ]);
     }
 
     public function devolver(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $mantenimiento = ($this->formulario($request)['mantenimiento'] ?? '') === '1';
+        $enviarAMantenimiento = ($this->formulario($request)['mantenimiento'] ?? '') === '1';
 
         try {
-            $this->reservas->devolver((int) $args['id'], $mantenimiento);
+            $this->servicioReservas->devolver((int) $args['id'], $enviarAMantenimiento);
             $this->exito('Devolución registrada correctamente.');
-        } catch (AppException $e) {
-            $this->error($e->getMessage());
+        } catch (AppException $excepcionAplicacion) {
+            $this->error($excepcionAplicacion->getMessage());
         }
 
         return $this->redirigir($response, '/reservas');
@@ -107,63 +107,63 @@ final class ReservaController extends WebController
 
     public function confirmarCancelacion(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $reserva = $this->reservas->obtener((int) $args['id']);
+        $reserva = $this->servicioReservas->obtener((int) $args['id']);
 
         return $this->render($response, 'confirmar', [
             'titulo' => 'Cancelar reserva',
             'seccion' => 'reservas',
             'mensaje' => "¿Cancelar la reserva #{$reserva->id} de {$reserva->cliente->nombre}? El vehículo quedará libre.",
-            'accion' => "/reservas/{$reserva->id}/cancelacion",
-            'volver' => '/reservas',
+            'rutaAccion' => "/reservas/{$reserva->id}/cancelacion",
+            'rutaVolver' => '/reservas',
             'textoBoton' => 'Cancelar reserva',
-            'peligro' => true,
+            'esPeligrosa' => true,
         ]);
     }
 
     public function cancelar(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         try {
-            $this->reservas->cancelar((int) $args['id']);
+            $this->servicioReservas->cancelar((int) $args['id']);
             $this->exito('Reserva cancelada correctamente.');
-        } catch (AppException $e) {
-            $this->error($e->getMessage());
+        } catch (AppException $excepcionAplicacion) {
+            $this->error($excepcionAplicacion->getMessage());
         }
 
         return $this->redirigir($response, '/reservas');
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $camposFormulario
      * @param array<string, string> $errores
      */
     private function formularioReserva(
         ResponseInterface $response,
-        array $datos,
+        array $camposFormulario,
         bool $buscarVehiculos,
         array $errores = [],
-        int $status = 200
+        int $codigoEstado = 200
     ): ResponseInterface {
-        $disponibles = null;
+        $vehiculosDisponibles = null;
 
         if ($buscarVehiculos) {
             try {
-                $disponibles = $this->vehiculos->disponibles(
-                    $datos['fecha_inicio'] ?? null,
-                    $datos['fecha_fin'] ?? null
+                $vehiculosDisponibles = $this->servicioVehiculos->disponibles(
+                    $camposFormulario['fecha_inicio'] ?? null,
+                    $camposFormulario['fecha_fin'] ?? null
                 )['vehiculos'];
-            } catch (ValidationException $e) {
-                $errores += $e->getErrores() ?? [];
-                $status = 422;
+            } catch (ValidationException $excepcionValidacion) {
+                $errores += $excepcionValidacion->obtenerErrores() ?? [];
+                $codigoEstado = 422;
             }
         }
 
         return $this->render($response, 'reservas/nueva', [
             'titulo' => 'Nueva reserva',
             'seccion' => 'reservas',
-            'datos' => $datos,
+            'datosFormulario' => $camposFormulario,
             'errores' => $errores,
-            'clientes' => $this->clientes->listar(null),
-            'disponibles' => $disponibles,
-        ], $status);
+            'clientes' => $this->servicioClientes->listar(null),
+            'vehiculosDisponibles' => $vehiculosDisponibles,
+        ], $codigoEstado);
     }
 }

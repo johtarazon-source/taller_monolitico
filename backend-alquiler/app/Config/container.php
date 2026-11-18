@@ -13,11 +13,11 @@ use Slim\Psr7\Factory\ResponseFactory;
  * Aqui solo se registra lo que necesita configuracion (valores del .env o la
  * carpeta base); servicios, controladores y middleware se resuelven por autowiring.
  */
-function buildContainer(string $basePath): Container
+function construirContenedor(string $rutaBase): Container
 {
-    $container = new Container();
+    $contenedor = new Container();
 
-    $container->set(AuthService::class, function (): AuthService {
+    $contenedor->set(AuthService::class, function (): AuthService {
         return new AuthService(
             __DIR__ . '/../../storage/sessions.json',
             $_ENV['ADMIN_USER'] ?? '',
@@ -26,13 +26,13 @@ function buildContainer(string $basePath): Container
         );
     });
 
-    $container->set(HtmlView::class, function () use ($basePath): HtmlView {
-        return new HtmlView(__DIR__ . '/../Views/web', $basePath);
+    $contenedor->set(HtmlView::class, function () use ($rutaBase): HtmlView {
+        return new HtmlView(__DIR__ . '/../Views/web', $rutaBase);
     });
 
-    $container->set(ResponseFactoryInterface::class, function (): ResponseFactoryInterface {
+    $contenedor->set(ResponseFactoryInterface::class, function (): ResponseFactoryInterface {
         return new ResponseFactory();
     });
 
-    return $container;
+    return $contenedor;
 }

@@ -13,45 +13,45 @@ use Psr\Http\Message\ServerRequestInterface;
  */
 final class ClienteController extends BaseController
 {
-    public function __construct(private ClienteService $clientes)
+    public function __construct(private ClienteService $servicioClientes)
     {
     }
 
     public function index(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $buscar = $request->getQueryParams()['buscar'] ?? null;
+        $terminoBusqueda = $request->getQueryParams()['buscar'] ?? null;
 
-        return $this->json($response, true, 'Clientes obtenidos.', $this->clientes->listar($buscar));
+        return $this->json($response, true, 'Clientes obtenidos.', $this->servicioClientes->listar($terminoBusqueda));
     }
 
     public function show(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        return $this->json($response, true, 'Cliente obtenido.', $this->clientes->obtener((int) $args['id']));
+        return $this->json($response, true, 'Cliente obtenido.', $this->servicioClientes->obtener((int) $args['id']));
     }
 
     public function store(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
-        $cliente = $this->clientes->crear($this->cuerpo($request));
+        $cliente = $this->servicioClientes->crear($this->cuerpo($request));
 
         return $this->json($response, true, 'Cliente registrado correctamente.', $cliente, 201);
     }
 
     public function update(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $cliente = $this->clientes->actualizar((int) $args['id'], $this->cuerpo($request));
+        $cliente = $this->servicioClientes->actualizar((int) $args['id'], $this->cuerpo($request));
 
         return $this->json($response, true, 'Cliente actualizado correctamente.', $cliente);
     }
 
     public function destroy(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        $this->clientes->eliminar((int) $args['id']);
+        $this->servicioClientes->eliminar((int) $args['id']);
 
         return $this->json($response, true, 'Cliente eliminado correctamente.', null);
     }
 
     public function historial(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
-        return $this->json($response, true, 'Historial del cliente obtenido.', $this->clientes->historial((int) $args['id']));
+        return $this->json($response, true, 'Historial del cliente obtenido.', $this->servicioClientes->historial((int) $args['id']));
     }
 }

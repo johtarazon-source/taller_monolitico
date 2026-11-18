@@ -17,14 +17,14 @@ use Psr\Http\Server\RequestHandlerInterface;
  */
 final class SesionWebMiddleware implements MiddlewareInterface
 {
-    public function __construct(private ResponseFactoryInterface $respuestas, private HtmlView $vista)
+    public function __construct(private ResponseFactoryInterface $fabricaRespuestas, private HtmlView $vista)
     {
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         if (Sesion::usuario() === null) {
-            return $this->respuestas->createResponse(302)->withHeader('Location', $this->vista->url('/login'));
+            return $this->fabricaRespuestas->createResponse(302)->withHeader('Location', $this->vista->url('/login'));
         }
 
         return $handler->handle($request);

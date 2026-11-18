@@ -5,7 +5,7 @@
  * @var array<string, mixed> $filtros
  */
 
-$estados = ['' => 'Todos', 'disponible' => 'Disponible', 'alquilado' => 'Alquilado', 'mantenimiento' => 'Mantenimiento'];
+$opcionesEstado = ['' => 'Todos', 'disponible' => 'Disponible', 'alquilado' => 'Alquilado', 'mantenimiento' => 'Mantenimiento'];
 $estadoFiltro = (string) ($filtros['estado'] ?? '');
 ?>
 <section class="pagina">
@@ -14,24 +14,24 @@ $estadoFiltro = (string) ($filtros['estado'] ?? '');
             <h1>Vehículos</h1>
             <p class="texto-suave">Flota registrada para alquiler.</p>
         </div>
-        <a class="btn btn--primario" href="<?= $this->e($this->url('/vehiculos/nuevo')) ?>">Nuevo vehículo</a>
+        <a class="boton boton--primario" href="<?= $this->escapar($this->url('/vehiculos/nuevo')) ?>">Nuevo vehículo</a>
     </header>
 
-    <form class="filtros" method="get" action="<?= $this->e($this->url('/vehiculos')) ?>" role="search">
+    <form class="filtros" method="get" action="<?= $this->escapar($this->url('/vehiculos')) ?>" role="search">
         <div class="campo filtros__campo">
-            <label class="campo__etiqueta" for="f-buscar">Buscar</label>
-            <input class="campo__control" id="f-buscar" name="buscar" type="search"
-                   placeholder="Marca, modelo o categoría" value="<?= $this->e($filtros['buscar'] ?? '') ?>">
+            <label class="campo__etiqueta" for="vehiculos-buscar">Buscar</label>
+            <input class="campo__control" id="vehiculos-buscar" name="buscar" type="search"
+                   placeholder="Marca, modelo o categoría" value="<?= $this->escapar($filtros['buscar'] ?? '') ?>">
         </div>
         <div class="campo filtros__campo">
-            <label class="campo__etiqueta" for="f-estado">Estado</label>
-            <select class="campo__control" id="f-estado" name="estado">
-                <?php foreach ($estados as $valor => $texto): ?>
-                    <option value="<?= $this->e($valor) ?>"<?= $valor === $estadoFiltro ? ' selected' : '' ?>><?= $this->e($texto) ?></option>
+            <label class="campo__etiqueta" for="vehiculos-estado">Estado</label>
+            <select class="campo__control" id="vehiculos-estado" name="estado">
+                <?php foreach ($opcionesEstado as $valor => $texto): ?>
+                    <option value="<?= $this->escapar($valor) ?>"<?= $valor === $estadoFiltro ? ' selected' : '' ?>><?= $this->escapar($texto) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
-        <button type="submit" class="btn btn--secundario">Filtrar</button>
+        <button type="submit" class="boton boton--secundario">Filtrar</button>
     </form>
 
     <?php if (count($vehiculos) === 0): ?>
@@ -42,9 +42,9 @@ $estadoFiltro = (string) ($filtros['estado'] ?? '');
                 <?= $this->parcial('_tarjeta_vehiculo', [
                     'vehiculo' => $vehiculo,
                     'enlaces' => [
-                        ['texto' => 'Editar', 'ruta' => "/vehiculos/{$vehiculo->id}/editar", 'clase' => 'btn--secundario'],
-                        ['texto' => 'Historial', 'ruta' => "/vehiculos/{$vehiculo->id}/historial", 'clase' => 'btn--secundario'],
-                        ['texto' => 'Eliminar', 'ruta' => "/vehiculos/{$vehiculo->id}/eliminar", 'clase' => 'btn--texto-peligro'],
+                        ['texto' => 'Editar', 'ruta' => "/vehiculos/{$vehiculo->id}/editar", 'claseCss' => 'boton--secundario'],
+                        ['texto' => 'Historial', 'ruta' => "/vehiculos/{$vehiculo->id}/historial", 'claseCss' => 'boton--secundario'],
+                        ['texto' => 'Eliminar', 'ruta' => "/vehiculos/{$vehiculo->id}/eliminar", 'claseCss' => 'boton--texto-peligro'],
                     ],
                 ]) ?>
             <?php endforeach; ?>

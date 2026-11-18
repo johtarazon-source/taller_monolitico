@@ -15,25 +15,25 @@ final class JsonView
     /**
      * Escribe la respuesta estandar en el cuerpo del response.
      *
-     * @param mixed $data
+     * @param mixed $datos
      */
     public static function render(
         ResponseInterface $response,
-        bool $ok,
+        bool $exitoso,
         string $mensaje,
-        $data = null,
-        int $status = 200
+        $datos = null,
+        int $codigoEstado = 200
     ): ResponseInterface {
-        $payload = [
-            'ok' => $ok,
+        $cuerpoRespuesta = [
+            'ok' => $exitoso,
             'mensaje' => $mensaje,
-            'data' => $data,
+            'data' => $datos,
         ];
 
-        $response->getBody()->write((string) json_encode($payload, JSON_UNESCAPED_UNICODE));
+        $response->getBody()->write((string) json_encode($cuerpoRespuesta, JSON_UNESCAPED_UNICODE));
 
         return $response
             ->withHeader('Content-Type', 'application/json')
-            ->withStatus($status);
+            ->withStatus($codigoEstado);
     }
 }

@@ -14,7 +14,7 @@ use App\Models\Vehiculo;
  */
 final class ReporteService
 {
-    public function __construct(private DisponibilidadService $disponibilidad)
+    public function __construct(private DisponibilidadService $servicioDisponibilidad)
     {
     }
 
@@ -23,7 +23,7 @@ final class ReporteService
      */
     public function resumen(): array
     {
-        $this->disponibilidad->sincronizarEstados();
+        $this->servicioDisponibilidad->sincronizarEstados();
         $hoy = DisponibilidadService::hoy();
 
         $porEstado = Vehiculo::query()
@@ -34,10 +34,10 @@ final class ReporteService
         $activas = Reserva::query()->with(['cliente', 'vehiculo'])->where('estado', Reserva::ACTIVA);
 
         $porCategoria = [];
-        foreach (Vehiculo::query()->selectRaw('categoria, estado, COUNT(*) AS total')->groupBy('categoria', 'estado')->get() as $fila) {
-            $categoria = $fila->categoria ?: 'Sin categoría';
+        foreach (Vehiculo::query()->selectRaw('categoria, estado, COUNT(*) AS total')->groupBy('categoria', 'estado')->get() as $conteoCategoriaEstado) {
+            $categoria = $conteoCategoriaEstado->categoria ?: 'Sin categoría';
             $porCategoria[$categoria] ??= [Vehiculo::DISPONIBLE => 0, Vehiculo::ALQUILADO => 0, Vehiculo::MANTENIMIENTO => 0];
-            $porCategoria[$categoria][$fila->estado] = (int) $fila->total;
+            $porCategoria[$categoria][$conteoCategoriaEstado->estado] = (int) $conteoCategoriaEstado->total;
         }
 
         return [

@@ -3,28 +3,28 @@
  * Alta y edicion de clientes.
  *
  * @var \App\Views\HtmlView $this
- * @var int|null $id
- * @var array<string, mixed> $datos
+ * @var int|null $clienteId
+ * @var array<string, mixed> $datosFormulario
  * @var array<string, string> $errores
  */
 
-$accion = $id === null ? '/clientes' : "/clientes/{$id}";
+$rutaFormulario = $clienteId === null ? '/clientes' : "/clientes/{$clienteId}";
 ?>
 <section class="pagina pagina--angosta">
-    <form class="formulario" method="post" action="<?= $this->e($this->url($accion)) ?>">
+    <form class="formulario" method="post" action="<?= $this->escapar($this->url($rutaFormulario)) ?>">
         <?= $this->csrf() ?>
-        <h1><?= $id === null ? 'Nuevo cliente' : 'Editar cliente' ?></h1>
+        <h1><?= $clienteId === null ? 'Nuevo cliente' : 'Editar cliente' ?></h1>
 
         <div class="rejilla-campos">
-            <?= $this->parcial('_campo', ['nombre' => 'nombre', 'etiqueta' => 'Nombre completo *', 'valor' => $datos['nombre'] ?? '', 'errores' => $errores, 'ancho' => true, 'atributos' => ['required' => true, 'maxlength' => 150]]) ?>
-            <?= $this->parcial('_campo', ['nombre' => 'telefono', 'etiqueta' => 'Teléfono', 'tipo' => 'tel', 'valor' => $datos['telefono'] ?? '', 'errores' => $errores, 'atributos' => ['maxlength' => 50]]) ?>
-            <?= $this->parcial('_campo', ['nombre' => 'correo', 'etiqueta' => 'Correo', 'tipo' => 'email', 'valor' => $datos['correo'] ?? '', 'errores' => $errores, 'atributos' => ['maxlength' => 100]]) ?>
-            <?= $this->parcial('_campo', ['nombre' => 'numero_licencia', 'etiqueta' => 'Número de licencia', 'valor' => $datos['numero_licencia'] ?? '', 'errores' => $errores, 'ancho' => true, 'ayuda' => 'Es obligatoria para poder hacer reservas.', 'atributos' => ['maxlength' => 50]]) ?>
+            <?= $this->parcial('_campo', ['nombreCampo' => 'nombre', 'etiqueta' => 'Nombre completo *', 'valor' => $datosFormulario['nombre'] ?? '', 'errores' => $errores, 'anchoCompleto' => true, 'atributos' => ['required' => true, 'maxlength' => 150]]) ?>
+            <?= $this->parcial('_campo', ['nombreCampo' => 'telefono', 'etiqueta' => 'Teléfono', 'tipo' => 'tel', 'valor' => $datosFormulario['telefono'] ?? '', 'errores' => $errores, 'atributos' => ['maxlength' => 50]]) ?>
+            <?= $this->parcial('_campo', ['nombreCampo' => 'correo', 'etiqueta' => 'Correo', 'tipo' => 'email', 'valor' => $datosFormulario['correo'] ?? '', 'errores' => $errores, 'atributos' => ['maxlength' => 100]]) ?>
+            <?= $this->parcial('_campo', ['nombreCampo' => 'numero_licencia', 'etiqueta' => 'Número de licencia', 'valor' => $datosFormulario['numero_licencia'] ?? '', 'errores' => $errores, 'anchoCompleto' => true, 'ayuda' => 'Es obligatoria para poder hacer reservas.', 'atributos' => ['maxlength' => 50]]) ?>
         </div>
 
         <div class="formulario__pie">
-            <a class="btn btn--secundario" href="<?= $this->e($this->url('/clientes')) ?>">Cancelar</a>
-            <button type="submit" class="btn btn--primario"><?= $id === null ? 'Registrar' : 'Guardar cambios' ?></button>
+            <a class="boton boton--secundario" href="<?= $this->escapar($this->url('/clientes')) ?>">Cancelar</a>
+            <button type="submit" class="boton boton--primario"><?= $clienteId === null ? 'Registrar' : 'Guardar cambios' ?></button>
         </div>
     </form>
 </section>

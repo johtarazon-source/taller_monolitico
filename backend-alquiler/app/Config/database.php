@@ -7,11 +7,11 @@ use Illuminate\Database\Capsule\Manager as Capsule;
 /**
  * Inicializa la conexion unica de Eloquent usando las variables del .env.
  */
-function bootDatabase(): Capsule
+function iniciarBaseDatos(): Capsule
 {
-    $capsule = new Capsule();
+    $gestorConexion = new Capsule();
 
-    $capsule->addConnection([
+    $gestorConexion->addConnection([
         'driver' => $_ENV['DB_CONNECTION'] ?? 'mysql',
         'host' => $_ENV['DB_HOST'] ?? '127.0.0.1',
         'port' => $_ENV['DB_PORT'] ?? '3306',
@@ -23,8 +23,8 @@ function bootDatabase(): Capsule
         'prefix' => '',
     ]);
 
-    $capsule->setAsGlobal();
-    $capsule->bootEloquent();
+    $gestorConexion->setAsGlobal();
+    $gestorConexion->bootEloquent();
 
-    return $capsule;
+    return $gestorConexion;
 }

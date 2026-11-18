@@ -20,21 +20,21 @@ final class ClienteService
     /**
      * @return Collection<int, Cliente>
      */
-    public function listar(?string $buscar): Collection
+    public function listar(?string $terminoBusqueda): Collection
     {
-        $query = Cliente::query()->orderBy('nombre');
+        $consulta = Cliente::query()->orderBy('nombre');
 
-        if ($buscar !== null && trim($buscar) !== '') {
-            $texto = '%' . trim($buscar) . '%';
-            $query->where(function (Builder $q) use ($texto): void {
-                $q->where('nombre', 'like', $texto)
-                    ->orWhere('correo', 'like', $texto)
-                    ->orWhere('telefono', 'like', $texto)
-                    ->orWhere('numero_licencia', 'like', $texto);
+        if ($terminoBusqueda !== null && trim($terminoBusqueda) !== '') {
+            $patronBusqueda = '%' . trim($terminoBusqueda) . '%';
+            $consulta->where(function (Builder $consultaBusqueda) use ($patronBusqueda): void {
+                $consultaBusqueda->where('nombre', 'like', $patronBusqueda)
+                    ->orWhere('correo', 'like', $patronBusqueda)
+                    ->orWhere('telefono', 'like', $patronBusqueda)
+                    ->orWhere('numero_licencia', 'like', $patronBusqueda);
             });
         }
 
-        return $query->get();
+        return $consulta->get();
     }
 
     public function obtener(int $id): Cliente
@@ -49,20 +49,20 @@ final class ClienteService
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $datosCliente
      */
-    public function crear(array $datos): Cliente
+    public function crear(array $datosCliente): Cliente
     {
-        return Cliente::create($this->validar($datos))->refresh();
+        return Cliente::create($this->validar($datosCliente))->refresh();
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $datosCliente
      */
-    public function actualizar(int $id, array $datos): Cliente
+    public function actualizar(int $id, array $datosCliente): Cliente
     {
         $cliente = $this->obtener($id);
-        $cliente->fill($this->validar($datos, $id))->save();
+        $cliente->fill($this->validar($datosCliente, $id))->save();
 
         return $cliente->refresh();
     }
@@ -93,33 +93,33 @@ final class ClienteService
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $datosCliente
      * @return array<string, mixed>
      */
-    private function validar(array $datos, ?int $idActual = null): array
+    private function validar(array $datosCliente, ?int $idActual = null): array
     {
-        $v = new Validador($datos);
+        $validador = new Validador($datosCliente);
 
-        $valores = [
-            'nombre' => $v->texto('nombre', 'El nombre', 150, true),
-            'telefono' => $v->texto('telefono', 'El teléfono', 50),
-            'correo' => $v->correo('correo', 'El correo', 100),
-            'numero_licencia' => $v->texto('numero_licencia', 'El número de licencia', 50),
+        $camposValidados = [
+            'nombre' => $validador->texto('nombre', 'El nombre', 150, true),
+            'telefono' => $validador->texto('telefono', 'El teléfono', 50),
+            'correo' => $validador->correo('correo', 'El correo', 100),
+            'numero_licencia' => $validador->texto('numero_licencia', 'El número de licencia', 50),
         ];
 
-        if ($valores['numero_licencia'] !== null && !$v->tieneError('numero_licencia')) {
+        if ($camposValidados['numero_licencia'] !== null && !$validador->tieneError('numero_licencia')) {
             $duplicado = Cliente::query()
-                ->where('numero_licencia', $valores['numero_licencia'])
-                ->when($idActual !== null, fn (Builder $q) => $q->where('id', '<>', $idActual))
+                ->where('numero_licencia', $camposValidados['numero_licencia'])
+                ->when($idActual !== null, fn (Builder $consultaCliente) => $consultaCliente->where('id', '<>', $idActual))
                 ->exists();
 
             if ($duplicado) {
-                $v->agregarError('numero_licencia', 'Ya existe un cliente con ese número de licencia.');
+                $validador->agregarError('numero_licencia', 'Ya existe un cliente con ese número de licencia.');
             }
         }
 
-        $v->verificar();
+        $validador->verificar();
 
-        return $valores;
+        return $camposValidados;
     }
 }

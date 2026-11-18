@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Collection;
  */
 final class VehiculoService
 {
-    public function __construct(private DisponibilidadService $disponibilidad)
+    public function __construct(private DisponibilidadService $servicioDisponibilidad)
     {
     }
 
@@ -27,33 +27,33 @@ final class VehiculoService
      */
     public function listar(array $filtros): Collection
     {
-        $this->disponibilidad->sincronizarEstados();
+        $this->servicioDisponibilidad->sincronizarEstados();
 
-        $query = Vehiculo::query()->orderBy('marca')->orderBy('modelo');
+        $consulta = Vehiculo::query()->orderBy('marca')->orderBy('modelo');
 
         if (!empty($filtros['estado'])) {
-            $query->where('estado', (string) $filtros['estado']);
+            $consulta->where('estado', (string) $filtros['estado']);
         }
 
         if (!empty($filtros['categoria'])) {
-            $query->where('categoria', (string) $filtros['categoria']);
+            $consulta->where('categoria', (string) $filtros['categoria']);
         }
 
         if (!empty($filtros['buscar'])) {
-            $texto = '%' . trim((string) $filtros['buscar']) . '%';
-            $query->where(function (Builder $q) use ($texto): void {
-                $q->where('marca', 'like', $texto)
-                    ->orWhere('modelo', 'like', $texto)
-                    ->orWhere('categoria', 'like', $texto);
+            $patronBusqueda = '%' . trim((string) $filtros['buscar']) . '%';
+            $consulta->where(function (Builder $consultaBusqueda) use ($patronBusqueda): void {
+                $consultaBusqueda->where('marca', 'like', $patronBusqueda)
+                    ->orWhere('modelo', 'like', $patronBusqueda)
+                    ->orWhere('categoria', 'like', $patronBusqueda);
             });
         }
 
-        return $query->get();
+        return $consulta->get();
     }
 
     public function obtener(int $id): Vehiculo
     {
-        $this->disponibilidad->sincronizarEstados();
+        $this->servicioDisponibilidad->sincronizarEstados();
 
         $vehiculo = Vehiculo::find($id);
 
@@ -65,31 +65,31 @@ final class VehiculoService
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $datosVehiculo
      */
-    public function crear(array $datos): Vehiculo
+    public function crear(array $datosVehiculo): Vehiculo
     {
-        $valores = $this->validar($datos);
-        $valores['estado'] ??= Vehiculo::DISPONIBLE;
+        $camposValidados = $this->validar($datosVehiculo);
+        $camposValidados['estado'] ??= Vehiculo::DISPONIBLE;
 
-        return Vehiculo::create($valores)->refresh();
+        return Vehiculo::create($camposValidados)->refresh();
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $datosVehiculo
      */
-    public function actualizar(int $id, array $datos): Vehiculo
+    public function actualizar(int $id, array $datosVehiculo): Vehiculo
     {
         $vehiculo = $this->obtener($id);
-        $valores = $this->validar($datos);
+        $camposValidados = $this->validar($datosVehiculo);
 
-        if (($valores['estado'] ?? null) === Vehiculo::MANTENIMIENTO && $vehiculo->estado === Vehiculo::ALQUILADO) {
+        if (($camposValidados['estado'] ?? null) === Vehiculo::MANTENIMIENTO && $vehiculo->estado === Vehiculo::ALQUILADO) {
             throw new ConflictException('El vehículo está alquilado. Registre la devolución antes de enviarlo a mantenimiento.');
         }
 
         // Si se envia "disponible" estando alquilado, la sincronizacion lo deja en alquilado.
-        $vehiculo->fill($valores)->save();
-        $this->disponibilidad->sincronizarEstados();
+        $vehiculo->fill($camposValidados)->save();
+        $this->servicioDisponibilidad->sincronizarEstados();
 
         return $vehiculo->refresh();
     }
@@ -111,15 +111,15 @@ final class VehiculoService
      *
      * @return array{fecha_inicio: string, fecha_fin: string, vehiculos: Collection<int, Vehiculo>}
      */
-    public function disponibles(?string $inicio, ?string $fin): array
+    public function disponibles(?string $fechaInicio, ?string $fechaFin): array
     {
-        $this->disponibilidad->sincronizarEstados();
+        $this->servicioDisponibilidad->sincronizarEstados();
 
-        $validador = new Validador(['fecha_inicio' => $inicio, 'fecha_fin' => $fin]);
-        $inicio = $validador->fecha('fecha_inicio', 'La fecha de inicio') ?? DisponibilidadService::hoy();
-        $fin = $validador->fecha('fecha_fin', 'La fecha de fin') ?? $inicio;
+        $validador = new Validador(['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin]);
+        $fechaInicio = $validador->fecha('fecha_inicio', 'La fecha de inicio') ?? DisponibilidadService::hoy();
+        $fechaFin = $validador->fecha('fecha_fin', 'La fecha de fin') ?? $fechaInicio;
 
-        if (!$validador->tieneError('fecha_inicio') && !$validador->tieneError('fecha_fin') && $fin < $inicio) {
+        if (!$validador->tieneError('fecha_inicio') && !$validador->tieneError('fecha_fin') && $fechaFin < $fechaInicio) {
             $validador->agregarError('fecha_fin', 'La fecha de fin no puede ser anterior a la de inicio.');
         }
 
@@ -127,14 +127,14 @@ final class VehiculoService
 
         $vehiculos = Vehiculo::query()
             ->where('estado', '<>', Vehiculo::MANTENIMIENTO)
-            ->whereDoesntHave('reservas', function (Builder $q) use ($inicio, $fin): void {
-                $this->disponibilidad->filtrarConflictos($q, $inicio, $fin);
+            ->whereDoesntHave('reservas', function (Builder $consultaConflictos) use ($fechaInicio, $fechaFin): void {
+                $this->servicioDisponibilidad->filtrarConflictos($consultaConflictos, $fechaInicio, $fechaFin);
             })
             ->orderBy('marca')
             ->orderBy('modelo')
             ->get();
 
-        return ['fecha_inicio' => $inicio, 'fecha_fin' => $fin, 'vehiculos' => $vehiculos];
+        return ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin, 'vehiculos' => $vehiculos];
     }
 
     /**
@@ -151,30 +151,30 @@ final class VehiculoService
     }
 
     /**
-     * @param array<string, mixed> $datos
+     * @param array<string, mixed> $datosVehiculo
      * @return array<string, mixed>
      */
-    private function validar(array $datos): array
+    private function validar(array $datosVehiculo): array
     {
-        $v = new Validador($datos);
-        $anioMax = (int) date('Y') + 1;
+        $validador = new Validador($datosVehiculo);
+        $anioMaximo = (int) date('Y') + 1;
 
-        $valores = [
-            'marca' => $v->texto('marca', 'La marca', 100, true),
-            'modelo' => $v->texto('modelo', 'El modelo', 100, true),
-            'anio' => $v->entero('anio', 'El año', 1901, $anioMax, true),
-            'categoria' => $v->texto('categoria', 'La categoría', 50),
+        $camposValidados = [
+            'marca' => $validador->texto('marca', 'La marca', 100, true),
+            'modelo' => $validador->texto('modelo', 'El modelo', 100, true),
+            'anio' => $validador->entero('anio', 'El año', 1901, $anioMaximo, true),
+            'categoria' => $validador->texto('categoria', 'La categoría', 50),
         ];
 
         // "alquilado" lo asigna el sistema a partir de las reservas.
-        $estado = $v->opcion('estado', 'El estado', [Vehiculo::DISPONIBLE, Vehiculo::MANTENIMIENTO]);
+        $estado = $validador->opcion('estado', 'El estado', [Vehiculo::DISPONIBLE, Vehiculo::MANTENIMIENTO]);
 
         if ($estado !== null) {
-            $valores['estado'] = $estado;
+            $camposValidados['estado'] = $estado;
         }
 
-        $v->verificar();
+        $validador->verificar();
 
-        return $valores;
+        return $camposValidados;
     }
 }
