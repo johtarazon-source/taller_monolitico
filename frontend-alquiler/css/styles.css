@@ -1,0 +1,318 @@
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700&family=Source+Sans+3:wght@400;500;600&display=swap');
+
+/* ===== Variables y reset ===== */
+:root {
+  --color-primario: #0f172a;
+  --color-primario-oscuro: #020617;
+  --color-acento: #0369a1;
+  --color-acento-oscuro: #075985;
+  --color-texto: #020617;
+  --color-texto-tenue: #64748b;
+  --color-fondo: #f8fafc;
+  --color-tarjeta: #ffffff;
+  --color-borde: #e2e8f0;
+  --color-exito: #059669;
+  --color-exito-fondo: #dcfce7;
+  --color-error: #dc2626;
+  --color-error-fondo: #fee2e2;
+  --color-advertencia: #b45309;
+  --color-advertencia-fondo: #fef3c7;
+  --fuente-titulos: 'Lexend', system-ui, sans-serif;
+  --fuente-texto: 'Source Sans 3', system-ui, sans-serif;
+  --radio: 0.5rem;
+  --espacio: 1rem;
+  --duracion-transicion: 200ms;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--fuente-texto);
+  font-size: 1rem;
+  color: var(--color-texto);
+  background-color: var(--color-fondo);
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--fuente-titulos);
+}
+
+a,
+button,
+.boton,
+.nav__enlace {
+  cursor: pointer;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.nav__enlace:focus-visible {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ===== Login (Flexbox, centrado) ===== */
+.login {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espacio);
+}
+
+.login__tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(100%, 24rem);
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  padding: clamp(1.25rem, 5vw, 2rem);
+  box-shadow: 0 10px 25px rgb(15 23 42 / 8%);
+}
+
+.login__titulo {
+  font-family: var(--fuente-titulos);
+  font-weight: 600;
+  font-size: clamp(1.25rem, 4vw, 1.75rem);
+  text-align: center;
+  color: var(--color-primario);
+}
+
+/* ===== Campos de formulario ===== */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.campo__etiqueta {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+input,
+select,
+textarea {
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio);
+  font-family: inherit;
+  font-size: 1rem;
+  background-color: var(--color-tarjeta);
+  color: var(--color-texto);
+}
+
+/* ===== Botones y estados (inline-block) ===== */
+.boton {
+  display: inline-block;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--radio);
+  padding: 0.5rem 1rem;
+  font-family: var(--fuente-titulos);
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: background-color var(--duracion-transicion) ease-out;
+}
+
+.boton--primario {
+  background-color: var(--color-acento);
+  color: #fff;
+}
+
+.boton--primario:hover {
+  background-color: var(--color-acento-oscuro);
+}
+
+.boton--primario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.boton--secundario {
+  background-color: transparent;
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto);
+}
+
+.boton--secundario:hover {
+  background-color: var(--color-borde);
+}
+
+.boton--peligro {
+  background-color: var(--color-error);
+  color: #fff;
+}
+
+.boton--peligro:hover {
+  background-color: #b91c1c;
+}
+
+.boton--pequeno {
+  display: inline-block;
+  min-height: 36px;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+}
+
+.alerta {
+  display: inline-block;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radio);
+  font-weight: 500;
+}
+
+.alerta--error {
+  background-color: var(--color-error-fondo);
+  color: var(--color-error);
+}
+
+.alerta--exito {
+  background-color: var(--color-exito-fondo);
+  color: var(--color-exito);
+}
+
+/* ===== Encabezado (sticky, Flexbox) ===== */
+.encabezado {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espacio);
+  flex-wrap: wrap;
+  background-color: var(--color-tarjeta);
+  border-bottom: 1px solid var(--color-borde);
+  padding: 0.75rem clamp(1rem, 4vw, 2rem);
+}
+
+.encabezado__marca {
+  font-family: var(--fuente-titulos);
+  font-weight: 700;
+  color: var(--color-primario);
+}
+
+.nav {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.nav__enlace {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--color-texto-tenue);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radio);
+  transition: background-color var(--duracion-transicion) ease-out, color var(--duracion-transicion) ease-out;
+}
+
+.nav__enlace:hover {
+  background-color: var(--color-borde);
+  color: var(--color-texto);
+}
+
+.nav__enlace.activo {
+  background-color: var(--color-primario);
+  color: #fff;
+}
+
+.encabezado__usuario {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* ===== Layout general (Grid) ===== */
+.contenido {
+  display: grid;
+  gap: var(--espacio);
+  padding: clamp(1rem, 4vw, 2rem);
+  max-width: 1200px;
+  margin-inline: auto;
+}
+
+.vista-modulo[hidden] {
+  display: none;
+}
+
+/* Mobile-first: la cuadricula de tarjetas crece en pantallas anchas */
+.tarjetas {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espacio);
+}
+
+@media (min-width: 640px) {
+  .tarjetas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .tarjetas {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ===== Estados (vehiculos y reservas): color + texto, nunca solo color ===== */
+.estado {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.estado--disponible,
+.estado--activa {
+  background-color: var(--color-exito-fondo);
+  color: var(--color-exito);
+}
+
+.estado--alquilado,
+.estado--completada {
+  background-color: #dbeafe;
+  color: var(--color-acento-oscuro);
+}
+
+.estado--mantenimiento {
+  background-color: var(--color-advertencia-fondo);
+  color: var(--color-advertencia);
+}
+
+.estado--cancelada {
+  background-color: var(--color-error-fondo);
+  color: var(--color-error);
+}
+
+/* ===== Vistas de login/shell (visibilidad) ===== */
+#vista-login[hidden],
+#shell[hidden] {
+  display: none;
+}

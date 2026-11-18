@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestor de Alquiler de Vehículos</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <main id="vista-login" class="login">
+      <form id="form-login" class="login__tarjeta" novalidate aria-labelledby="login-titulo">
+        <h1 id="login-titulo" class="login__titulo">Gestor de Alquiler</h1>
+        <p id="login-alerta" class="alerta" role="alert" aria-live="polite" hidden></p>
+
+        <label class="campo">
+          <span class="campo__etiqueta">Usuario</span>
+          <input type="text" name="usuario" autocomplete="username" required />
+        </label>
+
+        <label class="campo">
+          <span class="campo__etiqueta">Contraseña</span>
+          <input type="password" name="password" autocomplete="current-password" required />
+        </label>
+
+        <button type="submit" class="boton boton--primario">Iniciar sesión</button>
+      </form>
+    </main>
+
+    <div id="shell" hidden>
+      <header class="encabezado">
+        <span class="encabezado__marca">Gestor de Alquiler</span>
+        <nav class="nav" aria-label="Navegación principal">
+          <a href="#" class="nav__enlace" data-modulo="vehiculos" aria-current="page">Vehículos</a>
+          <a href="#" class="nav__enlace" data-modulo="clientes">Clientes</a>
+          <a href="#" class="nav__enlace" data-modulo="reservas">Reservas</a>
+          <a href="#" class="nav__enlace" data-modulo="disponibilidad">Disponibilidad</a>
+        </nav>
+        <div class="encabezado__usuario">
+          <span id="usuario-actual"></span>
+          <button id="btn-logout" type="button" class="boton boton--secundario">Salir</button>
+        </div>
+      </header>
+
+      <main id="contenido-principal" class="contenido" tabindex="-1">
+        <section class="vista-modulo" data-modulo="vehiculos" aria-label="Vehículos"></section>
+        <section class="vista-modulo" data-modulo="clientes" aria-label="Clientes"></section>
+        <section class="vista-modulo" data-modulo="reservas" aria-label="Reservas"></section>
+        <section class="vista-modulo" data-modulo="disponibilidad" aria-label="Disponibilidad"></section>
+      </main>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
