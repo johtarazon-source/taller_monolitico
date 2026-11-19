@@ -35,6 +35,10 @@ class SessionsController implements SessionsControllerInterface
             throw new AppException('Usuario y contraseña son obligatorios.', 422);
         }
 
+        if ($this->usuario_administrador === '' || $this->contrasena_administrador === '') {
+            throw new AppException('El administrador no está configurado en el servidor. Ejecute "php setup.php" en la carpeta backend-alquiler.', 500);
+        }
+
         $usuario_valido = hash_equals($this->usuario_administrador, $usuario);
         $contrasena_valida = $this->contrasena_administrador !== '' && hash_equals($this->contrasena_administrador, $contrasena);
 
