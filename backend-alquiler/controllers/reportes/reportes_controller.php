@@ -10,7 +10,6 @@ use app\models\repositories\vehiculos_repository\VehiculosRepositoryInterface;
 
 class ReportesController implements ReportesControllerInterface
 {
-    private const DIAS_PROXIMOS = 7;
     private const LIMITE_RESERVAS_RECIENTES = 5;
     private const LIMITE_MARCAS = 8;
 
@@ -30,16 +29,7 @@ class ReportesController implements ReportesControllerInterface
         $this->vehiculos_repository->sync_estados();
 
         $hoy = Reserva::hoy();
-        $fecha_limite_proximos_dias = date('Y-m-d', strtotime('+' . self::DIAS_PROXIMOS . ' days'));
         $por_estado = $this->reportes_repository->get_vehiculos_por_estado();
-
-        $por_categoria = [];
-
-        foreach ($this->reportes_repository->get_vehiculos_por_categoria_y_estado() as $fila) {
-            $categoria = $fila['categoria'] ?: 'Sin categoría';
-            $por_categoria[$categoria] ??= [Vehiculo::DISPONIBLE => 0, Vehiculo::ALQUILADO => 0, Vehiculo::MANTENIMIENTO => 0];
-            $por_categoria[$categoria][(string) $fila['estado']] = $fila['total'];
-        }
 
         return [
             'fecha' => $hoy,
@@ -55,17 +45,7 @@ class ReportesController implements ReportesControllerInterface
             ],
             'clientes' => $this->reportes_repository->count_clientes(),
             'reservas_activas' => $this->reportes_repository->count_reservas_activas(),
-            'por_categoria' => $por_categoria,
-
             'vencidas' => ReservasMapperController::to_array_list($this->reportes_repository->get_reservas_vencidas($hoy)),
-
-            'proximas_devoluciones' => ReservasMapperController::to_array_list(
-                $this->reportes_repository->get_proximas_devoluciones($hoy, $fecha_limite_proximos_dias)
-            ),
-
-            'proximas_salidas' => ReservasMapperController::to_array_list(
-                $this->reportes_repository->get_proximas_salidas($hoy, $fecha_limite_proximos_dias)
-            ),
         ];
     }
 }

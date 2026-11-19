@@ -26,18 +26,6 @@ class ReportesRepository implements ReportesRepositoryInterface
         return $conteos;
     }
 
-    public function get_vehiculos_por_categoria_y_estado(): array
-    {
-        return array_map(
-            fn (array $fila): array => [
-                'categoria' => $fila['categoria'],
-                'estado' => $fila['estado'],
-                'total' => (int) $fila['total'],
-            ],
-            $this->alquiler_db->select('SELECT categoria, estado, COUNT(*) AS total FROM vehiculos GROUP BY categoria, estado ORDER BY categoria, estado')
-        );
-    }
-
     public function count_clientes_activos(): int
     {
         return $this->contar("SELECT COUNT(DISTINCT cliente_id) AS total FROM reservas WHERE estado = 'activa'");
@@ -73,28 +61,6 @@ class ReportesRepository implements ReportesRepositoryInterface
     public function get_reservas_vencidas(string $hoy): array
     {
         return $this->get_reservas("AND r.estado = 'activa' AND r.fecha_fin < ?", 'r.fecha_fin ASC', '', 's', [$hoy]);
-    }
-
-    public function get_proximas_devoluciones(string $hoy, string $hasta): array
-    {
-        return $this->get_reservas(
-            "AND r.estado = 'activa' AND r.fecha_inicio <= ? AND r.fecha_fin BETWEEN ? AND ?",
-            'r.fecha_fin ASC',
-            '',
-            'sss',
-            [$hoy, $hoy, $hasta]
-        );
-    }
-
-    public function get_proximas_salidas(string $hoy, string $hasta): array
-    {
-        return $this->get_reservas(
-            "AND r.estado = 'activa' AND r.fecha_inicio > ? AND r.fecha_inicio <= ?",
-            'r.fecha_inicio ASC',
-            '',
-            'ss',
-            [$hoy, $hasta]
-        );
     }
 
     private function contar(string $sql): int

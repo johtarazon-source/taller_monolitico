@@ -1,5 +1,3 @@
-
-
 const URL_BASE_API = new URL(
   '../backend-alquiler/public/api',
   `${window.location.origin}${window.location.pathname}`,

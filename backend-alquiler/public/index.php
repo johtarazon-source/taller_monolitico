@@ -12,7 +12,6 @@ date_default_timezone_set(Env::obtener('APP_TIMEZONE', 'America/Bogota'));
 
 $mostrar_detalles_error = Env::obtener('APP_ENV', 'production') !== 'production';
 $mensaje_ruta_inexistente = 'La página o recurso solicitado no existe.';
-$metodos_de_la_api = ['GET', 'POST', 'PUT', 'DELETE'];
 
 $ruta_base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
 $metodo = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -133,10 +132,17 @@ try {
         exit;
     }
 
+    $ruta_existe_con_otro_metodo = false;
+
     foreach ($rutas as [$metodo_ruta, $patron_ruta, $requiere_token, $manejador]) {
         $expresion_ruta = '#^' . str_replace('{id}', '([0-9]+)', $patron_ruta) . '$#';
 
-        if ($metodo !== $metodo_ruta || !preg_match($expresion_ruta, $ruta_relativa_a_api, $coincidencias)) {
+        if (!preg_match($expresion_ruta, $ruta_relativa_a_api, $coincidencias)) {
+            continue;
+        }
+
+        if ($metodo !== $metodo_ruta) {
+            $ruta_existe_con_otro_metodo = true;
             continue;
         }
 
@@ -146,11 +152,11 @@ try {
         responder($codigo_estado, true, $mensaje, $datos);
     }
 
-    if (in_array($metodo, $metodos_de_la_api, true)) {
-        responder(404, false, $mensaje_ruta_inexistente);
+    if ($ruta_existe_con_otro_metodo) {
+        responder(405, false, 'Método no permitido.');
     }
 
-    responder(405, false, 'Método no permitido.');
+    responder(404, false, $mensaje_ruta_inexistente);
 } catch (AppException $excepcion) {
     responder($excepcion->get_codigo_estado(), false, $excepcion->getMessage(), $excepcion->get_errores());
 } catch (Throwable $excepcion) {
