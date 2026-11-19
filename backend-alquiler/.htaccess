@@ -1,0 +1,12 @@
+# Solo public/ debe poder abrirse desde el navegador.
+# Esto niega el acceso por URL a la configuracion, los tokens, el SQL y el codigo fuente.
+
+<FilesMatch "^(\.env.*|sessions\.json|.*\.sql)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(controllers|models|database)/ - [F,L]
+    RewriteRule ^autoload\.php$ - [F,L]
+</IfModule>

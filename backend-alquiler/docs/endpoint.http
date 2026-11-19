@@ -1,45 +1,29 @@
-### Prueba de endpoints - Gestor de Alquiler de Vehículos
-### Requiere la extensión "REST Client" de VS Code.
-### Pasos: 1) ejecuta "Iniciar sesión", 2) copia data.token a la variable @token, 3) prueba el resto.
 
 @baseUrl = http://localhost:8080/taller_monolitico/backend-alquiler/public/api
-@token = PEGA_AQUI_EL_TOKEN
+@token = 21a3e967d39abbc16abee4e975cd22f83e7e5796124948fd30aa57c68900d75f
 
 
-### ============ AUTENTICACIÓN ============
 
 ### Iniciar sesión
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-    "usuario": "Admin",
-    "password": "tu_contraseña"
+    "usuario": "usuario@gmail.com",
+    "password": "usuario1234"
 }
 
-### Cerrar sesión
-POST {{baseUrl}}/auth/logout
-Authorization: Bearer {{token}}
-
-
-### ============ RESUMEN ============
-
-### Resumen general (indicadores del panel)
+### Resumen general
 GET {{baseUrl}}/resumen
 Authorization: Bearer {{token}}
-
-
-### ============ VEHÍCULOS ============
 
 ### Consultar todos los vehículos
 GET {{baseUrl}}/vehiculos
 Authorization: Bearer {{token}}
 
-### Buscar vehículos por marca, modelo o categoría
 GET {{baseUrl}}/vehiculos?buscar=toyota
 Authorization: Bearer {{token}}
 
-### Filtrar vehículos por estado (disponible, alquilado, mantenimiento)
 GET {{baseUrl}}/vehiculos?estado=disponible
 Authorization: Bearer {{token}}
 
@@ -86,8 +70,6 @@ GET {{baseUrl}}/vehiculos/1/historial
 Authorization: Bearer {{token}}
 
 
-### ============ CLIENTES ============
-
 ### Consultar todos los clientes
 GET {{baseUrl}}/clientes
 Authorization: Bearer {{token}}
@@ -120,8 +102,8 @@ Content-Type: application/json
 {
     "nombre": "María Pérez Gómez",
     "telefono": "3007654321",
-    "correo": "maria.perez@example.com",
-    "numero_licencia": "LIC-12345"
+    "correo": "mariaPerez@hotmail.com",
+    "numero_licencia": "12312345"
 }
 
 ### Eliminar cliente
@@ -132,8 +114,6 @@ Authorization: Bearer {{token}}
 GET {{baseUrl}}/clientes/1/historial
 Authorization: Bearer {{token}}
 
-
-### ============ RESERVAS ============
 
 ### Consultar todas las reservas
 GET {{baseUrl}}/reservas

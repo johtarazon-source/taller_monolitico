@@ -1,4 +1,2 @@
-/vendor/
-composer.lock
 .env
-storage/sessions.json
+sessions.json
