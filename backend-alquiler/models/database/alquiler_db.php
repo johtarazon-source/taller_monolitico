@@ -68,9 +68,9 @@ class AlquilerDb implements AlquilerDbInterface
 
             $this->conexion = new mysqli(
                 Env::obtener('DB_HOST', '127.0.0.1'),
-                Env::obtener('DB_USERNAME', ''),
+                Env::obtener('DB_USERNAME', 'root'),
                 Env::obtener('DB_PASSWORD', ''),
-                Env::obtener('DB_DATABASE', ''),
+                Env::obtener('DB_DATABASE', 'alquiler_vehiculos_db'),
                 (int) Env::obtener('DB_PORT', '3306')
             );
             $this->conexion->query("SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'");

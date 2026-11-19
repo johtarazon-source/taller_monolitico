@@ -11,18 +11,18 @@ class SessionsController implements SessionsControllerInterface
 {
     private TokensRepositoryInterface $tokens_repository;
     private string $usuario_administrador;
-    private string $hash_contrasena_administrador;
+    private string $contrasena_administrador;
     private int $minutos_vigencia;
 
     public function __construct(
         TokensRepositoryInterface $tokens_repository,
         string $usuario_administrador,
-        string $hash_contrasena_administrador,
+        string $contrasena_administrador,
         int $minutos_vigencia
     ) {
         $this->tokens_repository = $tokens_repository;
         $this->usuario_administrador = $usuario_administrador;
-        $this->hash_contrasena_administrador = $hash_contrasena_administrador;
+        $this->contrasena_administrador = $contrasena_administrador;
         $this->minutos_vigencia = $minutos_vigencia;
     }
 
@@ -35,7 +35,10 @@ class SessionsController implements SessionsControllerInterface
             throw new AppException('Usuario y contraseña son obligatorios.', 422);
         }
 
-        if ($usuario !== $this->usuario_administrador || !password_verify($contrasena, $this->hash_contrasena_administrador)) {
+        $usuario_valido = hash_equals($this->usuario_administrador, $usuario);
+        $contrasena_valida = $this->contrasena_administrador !== '' && hash_equals($this->contrasena_administrador, $contrasena);
+
+        if (!$usuario_valido || !$contrasena_valida) {
             throw new UnauthorizedException('Usuario o contraseña incorrectos.');
         }
 

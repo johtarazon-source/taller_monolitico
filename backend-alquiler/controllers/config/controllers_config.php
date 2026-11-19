@@ -22,7 +22,7 @@ class ControllersConfig
         return new SessionsController(
             ModelsConfig::get_tokens_repository(),
             Env::obtener('ADMIN_USER', ''),
-            Env::obtener('ADMIN_PASSWORD_HASH', ''),
+            Env::obtener('ADMIN_PASSWORD', ''),
             (int) Env::obtener('APP_TOKEN_TTL_MINUTES', '120')
         );
     }

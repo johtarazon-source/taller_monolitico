@@ -8,5 +8,5 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^(controllers|models|database)/ - [F,L]
-    RewriteRule ^autoload\.php$ - [F,L]
+    RewriteRule ^(autoload|setup)\.php$ - [F,L]
 </IfModule>
