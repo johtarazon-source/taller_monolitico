@@ -8,18 +8,18 @@ use app\models\mappers\ReservaMappers;
 
 class ReportesRepository implements ReportesRepositoryInterface
 {
-    private AlquilerDbInterface $db;
+    private AlquilerDbInterface $alquiler_db;
 
-    public function __construct(AlquilerDbInterface $db)
+    public function __construct(AlquilerDbInterface $alquiler_db)
     {
-        $this->db = $db;
+        $this->alquiler_db = $alquiler_db;
     }
 
     public function get_vehiculos_por_estado(): array
     {
         $conteos = [];
 
-        foreach ($this->db->select('SELECT estado, COUNT(*) AS total FROM vehiculos GROUP BY estado') as $fila) {
+        foreach ($this->alquiler_db->select('SELECT estado, COUNT(*) AS total FROM vehiculos GROUP BY estado') as $fila) {
             $conteos[(string) $fila['estado']] = (int) $fila['total'];
         }
 
@@ -34,7 +34,7 @@ class ReportesRepository implements ReportesRepositoryInterface
                 'estado' => $fila['estado'],
                 'total' => (int) $fila['total'],
             ],
-            $this->db->select('SELECT categoria, estado, COUNT(*) AS total FROM vehiculos GROUP BY categoria, estado ORDER BY categoria, estado')
+            $this->alquiler_db->select('SELECT categoria, estado, COUNT(*) AS total FROM vehiculos GROUP BY categoria, estado ORDER BY categoria, estado')
         );
     }
 
@@ -60,7 +60,7 @@ class ReportesRepository implements ReportesRepositoryInterface
 
     public function get_marcas(int $limite): array
     {
-        $filas = $this->db->select("SELECT DISTINCT marca FROM vehiculos ORDER BY marca ASC LIMIT {$limite}");
+        $filas = $this->alquiler_db->select("SELECT DISTINCT marca FROM vehiculos ORDER BY marca ASC LIMIT {$limite}");
 
         return array_map(fn (array $fila): string => $fila['marca'], $filas);
     }
@@ -99,13 +99,9 @@ class ReportesRepository implements ReportesRepositoryInterface
 
     private function contar(string $sql): int
     {
-        return (int) $this->db->select($sql)[0]['total'];
+        return (int) $this->alquiler_db->select($sql)[0]['total'];
     }
 
-    /**
-     * @param list<mixed> $parametros
-     * @return list<Reserva>
-     */
     private function get_reservas(string $condiciones, string $orden, string $limite, string $tipos = '', array $parametros = []): array
     {
         $sql = 'SELECT ' . ReservaMappers::columnas_con_relaciones() . ' ' . ReservaMappers::UNIONES
@@ -113,7 +109,7 @@ class ReportesRepository implements ReportesRepositoryInterface
 
         return array_map(
             fn (array $fila): Reserva => ReservaMappers::to_entity($fila, true, true),
-            $this->db->select($sql, $tipos, $parametros)
+            $this->alquiler_db->select($sql, $tipos, $parametros)
         );
     }
 }

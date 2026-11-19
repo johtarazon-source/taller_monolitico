@@ -6,11 +6,6 @@ use app\models\entities\Vehiculo;
 
 class VehiculosMapperController
 {
-    /**
-     * Arma la entidad con datos ya validados (marca, modelo, anio, categoria y, opcional, estado).
-     *
-     * @param array<string, mixed> $datos
-     */
     public static function to_entity(array $datos, int $id = 0): Vehiculo
     {
         return new Vehiculo(
@@ -23,9 +18,6 @@ class VehiculosMapperController
         );
     }
 
-    /**
-     * @return array<string, mixed> el vehiculo tal como lo devuelve la API
-     */
     public static function to_array(Vehiculo $vehiculo): array
     {
         return [
@@ -38,5 +30,10 @@ class VehiculosMapperController
             'created_at' => FormatoMapperController::marca_tiempo($vehiculo->get_created_at()),
             'updated_at' => FormatoMapperController::marca_tiempo($vehiculo->get_updated_at()),
         ];
+    }
+
+    public static function to_array_list(array $vehiculos): array
+    {
+        return array_map(fn (Vehiculo $vehiculo): array => self::to_array($vehiculo), $vehiculos);
     }
 }

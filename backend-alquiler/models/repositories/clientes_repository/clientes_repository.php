@@ -8,11 +8,11 @@ use app\models\mappers\ClienteMappers;
 
 class ClientesRepository implements ClientesRepositoryInterface
 {
-    private AlquilerDbInterface $db;
+    private AlquilerDbInterface $alquiler_db;
 
-    public function __construct(AlquilerDbInterface $db)
+    public function __construct(AlquilerDbInterface $alquiler_db)
     {
-        $this->db = $db;
+        $this->alquiler_db = $alquiler_db;
     }
 
     public function get_clientes(?string $buscar): array
@@ -32,13 +32,13 @@ class ClientesRepository implements ClientesRepositoryInterface
 
         return array_map(
             fn (array $fila): Cliente => ClienteMappers::to_entity($fila),
-            $this->db->select($sql, $tipos, $parametros)
+            $this->alquiler_db->select($sql, $tipos, $parametros)
         );
     }
 
     public function find_cliente_by_id(int $id): ?Cliente
     {
-        $filas = $this->db->select('SELECT * FROM clientes WHERE id = ? LIMIT 1', 'i', [$id]);
+        $filas = $this->alquiler_db->select('SELECT * FROM clientes WHERE id = ? LIMIT 1', 'i', [$id]);
 
         return $filas === [] ? null : ClienteMappers::to_entity($filas[0]);
     }
@@ -47,7 +47,7 @@ class ClientesRepository implements ClientesRepositoryInterface
     {
         $ahora = date('Y-m-d H:i:s');
 
-        $this->db->execute(
+        $this->alquiler_db->execute(
             'INSERT INTO clientes (nombre, telefono, correo, numero_licencia, updated_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
             'ssssss',
             [
@@ -60,12 +60,12 @@ class ClientesRepository implements ClientesRepositoryInterface
             ]
         );
 
-        return $this->db->last_insert_id();
+        return $this->alquiler_db->last_insert_id();
     }
 
     public function update_cliente(Cliente $cliente): void
     {
-        $this->db->execute(
+        $this->alquiler_db->execute(
             'UPDATE clientes SET nombre = ?, telefono = ?, correo = ?, numero_licencia = ?, updated_at = ? WHERE id = ?',
             'sssssi',
             [
@@ -81,21 +81,21 @@ class ClientesRepository implements ClientesRepositoryInterface
 
     public function delete_cliente(int $id): void
     {
-        $this->db->execute('DELETE FROM clientes WHERE id = ?', 'i', [$id]);
+        $this->alquiler_db->execute('DELETE FROM clientes WHERE id = ?', 'i', [$id]);
     }
 
     public function has_reservas(int $id): bool
     {
-        return $this->db->select('SELECT 1 FROM reservas WHERE cliente_id = ? LIMIT 1', 'i', [$id]) !== [];
+        return $this->alquiler_db->select('SELECT 1 FROM reservas WHERE cliente_id = ? LIMIT 1', 'i', [$id]) !== [];
     }
 
     public function exists_licencia(string $numero_licencia, ?int $id_excluido = null): bool
     {
         if ($id_excluido === null) {
-            return $this->db->select('SELECT 1 FROM clientes WHERE numero_licencia = ? LIMIT 1', 's', [$numero_licencia]) !== [];
+            return $this->alquiler_db->select('SELECT 1 FROM clientes WHERE numero_licencia = ? LIMIT 1', 's', [$numero_licencia]) !== [];
         }
 
-        return $this->db->select(
+        return $this->alquiler_db->select(
             'SELECT 1 FROM clientes WHERE numero_licencia = ? AND id <> ? LIMIT 1',
             'si',
             [$numero_licencia, $id_excluido]

@@ -7,6 +7,8 @@ class Reserva
     public const ACTIVA = 'activa';
     public const COMPLETADA = 'completada';
     public const CANCELADA = 'cancelada';
+    public const VENCIDA = 'vencida';
+    public const PROGRAMADA = 'programada';
 
     private int $id;
     private int $cliente_id;
@@ -19,9 +21,6 @@ class Reserva
     private ?Cliente $cliente;
     private ?Vehiculo $vehiculo;
 
-    /**
-     * El cliente y el vehiculo se cargan solo cuando la consulta los necesita.
-     */
     public function __construct(
         int $id,
         int $cliente_id,
@@ -46,16 +45,11 @@ class Reserva
         $this->vehiculo = $vehiculo;
     }
 
-    /** Fecha de hoy (AAAA-MM-DD) en la zona horaria de la aplicacion. */
     public static function hoy(): string
     {
         return date('Y-m-d');
     }
 
-    /**
-     * Estado que ve el usuario: distingue las activas que aun no comienzan
-     * (programada) y las que pasaron su fecha sin devolucion (vencida).
-     */
     public function get_estado_visible(): ?string
     {
         if ($this->estado !== self::ACTIVA) {
@@ -65,10 +59,10 @@ class Reserva
         $hoy = self::hoy();
 
         if ($this->fecha_fin < $hoy) {
-            return 'vencida';
+            return self::VENCIDA;
         }
 
-        return $this->fecha_inicio > $hoy ? 'programada' : self::ACTIVA;
+        return $this->fecha_inicio > $hoy ? self::PROGRAMADA : self::ACTIVA;
     }
 
     public function get_id(): int

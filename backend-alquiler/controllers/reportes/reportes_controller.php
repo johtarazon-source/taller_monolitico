@@ -10,6 +10,10 @@ use app\models\repositories\vehiculos_repository\VehiculosRepositoryInterface;
 
 class ReportesController implements ReportesControllerInterface
 {
+    private const DIAS_PROXIMOS = 7;
+    private const LIMITE_RESERVAS_RECIENTES = 5;
+    private const LIMITE_MARCAS = 8;
+
     private ReportesRepositoryInterface $reportes_repository;
     private VehiculosRepositoryInterface $vehiculos_repository;
 
@@ -26,7 +30,7 @@ class ReportesController implements ReportesControllerInterface
         $this->vehiculos_repository->sync_estados();
 
         $hoy = Reserva::hoy();
-        $hasta = date('Y-m-d', strtotime('+7 days'));
+        $fecha_limite_proximos_dias = date('Y-m-d', strtotime('+' . self::DIAS_PROXIMOS . ' days'));
         $por_estado = $this->reportes_repository->get_vehiculos_por_estado();
 
         $por_categoria = [];
@@ -41,8 +45,8 @@ class ReportesController implements ReportesControllerInterface
             'fecha' => $hoy,
             'clientes_activos' => $this->reportes_repository->count_clientes_activos(),
             'reservas_total' => $this->reportes_repository->count_reservas(),
-            'recientes' => ReservasMapperController::to_array_list($this->reportes_repository->get_reservas_recientes(5)),
-            'marcas' => $this->reportes_repository->get_marcas(8),
+            'recientes' => ReservasMapperController::to_array_list($this->reportes_repository->get_reservas_recientes(self::LIMITE_RESERVAS_RECIENTES)),
+            'marcas' => $this->reportes_repository->get_marcas(self::LIMITE_MARCAS),
             'vehiculos' => [
                 'total' => array_sum($por_estado),
                 Vehiculo::DISPONIBLE => $por_estado[Vehiculo::DISPONIBLE] ?? 0,
@@ -52,15 +56,15 @@ class ReportesController implements ReportesControllerInterface
             'clientes' => $this->reportes_repository->count_clientes(),
             'reservas_activas' => $this->reportes_repository->count_reservas_activas(),
             'por_categoria' => $por_categoria,
-            // Activas cuya fecha de fin ya paso sin registrar la devolucion.
+
             'vencidas' => ReservasMapperController::to_array_list($this->reportes_repository->get_reservas_vencidas($hoy)),
-            // Devoluciones esperadas hoy o en los proximos 7 dias.
+
             'proximas_devoluciones' => ReservasMapperController::to_array_list(
-                $this->reportes_repository->get_proximas_devoluciones($hoy, $hasta)
+                $this->reportes_repository->get_proximas_devoluciones($hoy, $fecha_limite_proximos_dias)
             ),
-            // Reservas que comienzan en los proximos 7 dias.
+
             'proximas_salidas' => ReservasMapperController::to_array_list(
-                $this->reportes_repository->get_proximas_salidas($hoy, $hasta)
+                $this->reportes_repository->get_proximas_salidas($hoy, $fecha_limite_proximos_dias)
             ),
         ];
     }

@@ -2,19 +2,8 @@
 
 namespace app\models\config;
 
-/**
- * Lector del archivo .env, sin librerias externas.
- *
- * Reglas (las mismas que usaba phpdotenv):
- * - Las lineas vacias y las que empiezan por "#" se ignoran; se admite el prefijo "export ".
- * - Valor entre comillas simples: literal (sirve para hashes con "$").
- * - Valor entre comillas dobles: admite los escapes \\ \" \$ \n \r \t \f \v.
- * - Valor sin comillas: termina en un espacio o en "#".
- * - Una variable que ya esta definida en el entorno (Apache, consola) no se pisa.
- */
 class Env
 {
-    /** @var array<string, string> */
     private static array $valores = [];
 
     public static function cargar(string $archivo): void
@@ -99,16 +88,16 @@ class Env
         $resultado = '';
         $largo = strlen($texto);
 
-        for ($i = 1; $i < $largo; $i++) {
-            $caracter = $texto[$i];
+        for ($posicion = 1; $posicion < $largo; $posicion++) {
+            $caracter = $texto[$posicion];
 
             if ($caracter === '"') {
                 break;
             }
 
-            if ($caracter === '\\' && $i + 1 < $largo && isset($escapes[$texto[$i + 1]])) {
-                $resultado .= $escapes[$texto[$i + 1]];
-                $i++;
+            if ($caracter === '\\' && $posicion + 1 < $largo && isset($escapes[$texto[$posicion + 1]])) {
+                $resultado .= $escapes[$texto[$posicion + 1]];
+                $posicion++;
                 continue;
             }
 

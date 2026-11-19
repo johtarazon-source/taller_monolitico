@@ -4,10 +4,6 @@ namespace app\models\repositories\tokens_repository;
 
 use RuntimeException;
 
-/**
- * Guarda las sesiones de la API en un archivo JSON (sessions.json), con bloqueo de archivo.
- * Formato: { "<sha256 del token>": { "usuario": "...", "activo": true, "expira_en": 1234567890 } }
- */
 class TokensRepository implements TokensRepositoryInterface
 {
     private string $ruta_archivo;
@@ -39,7 +35,6 @@ class TokensRepository implements TokensRepositoryInterface
         }
     }
 
-    /** @return array<string, array{usuario: string, activo: bool, expira_en: int}> */
     private function leer_sesiones(): array
     {
         if (!file_exists($this->ruta_archivo)) {
@@ -62,7 +57,6 @@ class TokensRepository implements TokensRepositoryInterface
         return is_array($sesiones) ? $sesiones : [];
     }
 
-    /** @param array<string, array{usuario: string, activo: bool, expira_en: int}> $sesiones */
     private function escribir_sesiones(array $sesiones): void
     {
         $archivo = fopen($this->ruta_archivo, 'c+');

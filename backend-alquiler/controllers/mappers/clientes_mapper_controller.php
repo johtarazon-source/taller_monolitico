@@ -6,19 +6,11 @@ use app\models\entities\Cliente;
 
 class ClientesMapperController
 {
-    /**
-     * Arma la entidad con datos ya validados (nombre, telefono, correo y numero_licencia).
-     *
-     * @param array<string, mixed> $datos
-     */
     public static function to_entity(array $datos, int $id = 0): Cliente
     {
         return new Cliente($id, $datos['nombre'], $datos['telefono'], $datos['correo'], $datos['numero_licencia']);
     }
 
-    /**
-     * @return array<string, mixed> el cliente tal como lo devuelve la API
-     */
     public static function to_array(Cliente $cliente): array
     {
         return [
@@ -30,5 +22,10 @@ class ClientesMapperController
             'created_at' => FormatoMapperController::marca_tiempo($cliente->get_created_at()),
             'updated_at' => FormatoMapperController::marca_tiempo($cliente->get_updated_at()),
         ];
+    }
+
+    public static function to_array_list(array $clientes): array
+    {
+        return array_map(fn (Cliente $cliente): array => self::to_array($cliente), $clientes);
     }
 }

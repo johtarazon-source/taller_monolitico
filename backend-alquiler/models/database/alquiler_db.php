@@ -4,12 +4,8 @@ namespace app\models\database;
 
 use app\models\config\Env;
 use mysqli;
+use mysqli_stmt;
 
-/**
- * Conexion a MySQL con mysqli. Se conecta la primera vez que se usa y mantiene la misma
- * conexion durante toda la peticion (necesario para las transacciones).
- * Todas las consultas son preparadas: los datos del usuario nunca se concatenan al SQL.
- */
 class AlquilerDb implements AlquilerDbInterface
 {
     private ?mysqli $conexion = null;
@@ -54,7 +50,7 @@ class AlquilerDb implements AlquilerDbInterface
         $this->conectar()->rollback();
     }
 
-    private function preparar(string $sql, string $tipos, array $parametros): \mysqli_stmt
+    private function preparar(string $sql, string $tipos, array $parametros): mysqli_stmt
     {
         $sentencia = $this->conectar()->prepare($sql);
 
@@ -68,7 +64,6 @@ class AlquilerDb implements AlquilerDbInterface
     private function conectar(): mysqli
     {
         if ($this->conexion === null) {
-            // Con esto mysqli lanza excepciones en vez de devolver false.
             mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
             $this->conexion = new mysqli(

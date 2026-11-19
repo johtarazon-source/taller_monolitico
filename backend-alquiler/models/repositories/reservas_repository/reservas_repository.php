@@ -10,11 +10,11 @@ use app\models\mappers\VehiculoMappers;
 
 class ReservasRepository implements ReservasRepositoryInterface
 {
-    private AlquilerDbInterface $db;
+    private AlquilerDbInterface $alquiler_db;
 
-    public function __construct(AlquilerDbInterface $db)
+    public function __construct(AlquilerDbInterface $alquiler_db)
     {
-        $this->db = $db;
+        $this->alquiler_db = $alquiler_db;
     }
 
     public function get_reservas(array $filtros): array
@@ -45,13 +45,13 @@ class ReservasRepository implements ReservasRepositoryInterface
 
         return array_map(
             fn (array $fila): Reserva => ReservaMappers::to_entity($fila, true, true),
-            $this->db->select($sql, $tipos, $parametros)
+            $this->alquiler_db->select($sql, $tipos, $parametros)
         );
     }
 
     public function find_reserva_by_id(int $id): ?Reserva
     {
-        $filas = $this->db->select(
+        $filas = $this->alquiler_db->select(
             'SELECT ' . ReservaMappers::columnas_con_relaciones() . ' ' . ReservaMappers::UNIONES . ' WHERE r.id = ? LIMIT 1',
             'i',
             [$id]
@@ -68,7 +68,7 @@ class ReservasRepository implements ReservasRepositoryInterface
 
         return array_map(
             fn (array $fila): Reserva => ReservaMappers::to_entity($fila, true, false),
-            $this->db->select($sql, 'i', [$vehiculo_id])
+            $this->alquiler_db->select($sql, 'i', [$vehiculo_id])
         );
     }
 
@@ -80,7 +80,7 @@ class ReservasRepository implements ReservasRepositoryInterface
 
         return array_map(
             fn (array $fila): Reserva => ReservaMappers::to_entity($fila, false, true),
-            $this->db->select($sql, 'i', [$cliente_id])
+            $this->alquiler_db->select($sql, 'i', [$cliente_id])
         );
     }
 
@@ -88,7 +88,7 @@ class ReservasRepository implements ReservasRepositoryInterface
     {
         $ahora = date('Y-m-d H:i:s');
 
-        $this->db->execute(
+        $this->alquiler_db->execute(
             'INSERT INTO reservas (cliente_id, vehiculo_id, fecha_inicio, fecha_fin, estado, updated_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
             'iisssss',
             [
@@ -102,12 +102,12 @@ class ReservasRepository implements ReservasRepositoryInterface
             ]
         );
 
-        return $this->db->last_insert_id();
+        return $this->alquiler_db->last_insert_id();
     }
 
     public function update_estado(int $id, string $estado): void
     {
-        $this->db->execute('UPDATE reservas SET estado = ?, updated_at = ? WHERE id = ?', 'ssi', [$estado, date('Y-m-d H:i:s'), $id]);
+        $this->alquiler_db->execute('UPDATE reservas SET estado = ?, updated_at = ? WHERE id = ?', 'ssi', [$estado, date('Y-m-d H:i:s'), $id]);
     }
 
     public function has_conflicto(int $vehiculo_id, string $fecha_inicio, string $fecha_fin): bool
@@ -115,21 +115,21 @@ class ReservasRepository implements ReservasRepositoryInterface
         $sql = "SELECT 1 FROM reservas WHERE vehiculo_id = ? AND estado = 'activa' AND fecha_inicio <= ? "
             . 'AND (fecha_fin >= ? OR fecha_fin < ?) LIMIT 1';
 
-        return $this->db->select($sql, 'isss', [$vehiculo_id, $fecha_fin, $fecha_inicio, date('Y-m-d')]) !== [];
+        return $this->alquiler_db->select($sql, 'isss', [$vehiculo_id, $fecha_fin, $fecha_inicio, date('Y-m-d')]) !== [];
     }
 
     public function begin_transaction(): void
     {
-        $this->db->begin_transaction();
+        $this->alquiler_db->begin_transaction();
     }
 
     public function commit(): void
     {
-        $this->db->commit();
+        $this->alquiler_db->commit();
     }
 
     public function rollback(): void
     {
-        $this->db->rollback();
+        $this->alquiler_db->rollback();
     }
 }

@@ -5,18 +5,10 @@ namespace app\controllers\validators;
 use app\controllers\exceptions\ValidationException;
 use DateTimeImmutable;
 
-/**
- * Validador minimo de entradas. Acumula los errores por campo y los lanza
- * juntos para que el cliente pueda mostrarlos todos a la vez.
- */
 class Validator
 {
-    /** @var array<string, string> */
     private array $errores = [];
 
-    /**
-     * @param array<string, mixed> $datos_entrada
-     */
     public function __construct(private array $datos_entrada)
     {
     }
@@ -75,9 +67,6 @@ class Validator
         return $entero;
     }
 
-    /**
-     * @param list<string> $permitidos
-     */
     public function opcion(string $campo, string $etiqueta, array $permitidos, bool $requerido = false): ?string
     {
         $valor = $this->texto($campo, $etiqueta, 50, $requerido);
@@ -91,9 +80,6 @@ class Validator
         return $valor;
     }
 
-    /**
-     * Valida una fecha con formato estricto AAAA-MM-DD.
-     */
     public function fecha(string $campo, string $etiqueta, bool $requerido = false): ?string
     {
         $valor = $this->texto($campo, $etiqueta, 10, $requerido);
@@ -121,9 +107,6 @@ class Validator
         return isset($this->errores[$campo]);
     }
 
-    /**
-     * @throws ValidationException si se acumulo algun error
-     */
     public function verificar(): void
     {
         if ($this->errores !== []) {
@@ -131,7 +114,7 @@ class Validator
         }
     }
 
-    public static function es_fecha_valida(string $valor): bool
+    private static function es_fecha_valida(string $valor): bool
     {
         $fecha = DateTimeImmutable::createFromFormat('!Y-m-d', $valor);
 

@@ -15,9 +15,6 @@ use app\models\repositories\tokens_repository\TokensRepositoryInterface;
 use app\models\repositories\vehiculos_repository\VehiculosRepository;
 use app\models\repositories\vehiculos_repository\VehiculosRepositoryInterface;
 
-/**
- * Arma los objetos de la capa de modelos. Todos los repositorios comparten la misma conexion.
- */
 class ModelsConfig
 {
     private static ?AlquilerDbInterface $alquiler_db = null;
@@ -49,7 +46,6 @@ class ModelsConfig
 
     public static function get_tokens_repository(): TokensRepositoryInterface
     {
-        // Por defecto sessions.json esta en la raiz del backend; SESSIONS_FILE permite cambiarlo.
         return new TokensRepository(Env::obtener('SESSIONS_FILE') ?: dirname(__DIR__, 2) . '/sessions.json');
     }
 }

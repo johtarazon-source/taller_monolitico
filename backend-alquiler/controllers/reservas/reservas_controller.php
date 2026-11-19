@@ -39,7 +39,7 @@ class ReservasController implements ReservasControllerInterface
 
     public function get_reserva(int $id): array
     {
-        return ReservasMapperController::to_array($this->obtener($id));
+        return ReservasMapperController::to_array($this->buscar_o_lanzar_no_encontrado($id));
     }
 
     public function save_reserva(array $datos): array
@@ -78,7 +78,7 @@ class ReservasController implements ReservasControllerInterface
 
         $this->vehiculos_repository->sync_estados();
 
-        return ReservasMapperController::to_array($this->obtener($id));
+        return ReservasMapperController::to_array($this->buscar_o_lanzar_no_encontrado($id));
     }
 
     public function return_reserva(int $id, bool $mantenimiento): array
@@ -99,15 +99,15 @@ class ReservasController implements ReservasControllerInterface
             }
 
             $this->reservas_repository->commit();
-        } catch (Throwable $error) {
+        } catch (Throwable $excepcion) {
             $this->reservas_repository->rollback();
 
-            throw $error;
+            throw $excepcion;
         }
 
         $this->vehiculos_repository->sync_estados();
 
-        return ReservasMapperController::to_array($this->obtener($id));
+        return ReservasMapperController::to_array($this->buscar_o_lanzar_no_encontrado($id));
     }
 
     public function cancel_reserva(int $id): array
@@ -116,13 +116,9 @@ class ReservasController implements ReservasControllerInterface
         $this->reservas_repository->update_estado($id, Reserva::CANCELADA);
         $this->vehiculos_repository->sync_estados();
 
-        return ReservasMapperController::to_array($this->obtener($id));
+        return ReservasMapperController::to_array($this->buscar_o_lanzar_no_encontrado($id));
     }
 
-    /**
-     * Crea la reserva dentro de una transaccion que bloquea la fila del vehiculo, para que dos
-     * reservas simultaneas no se crucen.
-     */
     private function guardar_si_esta_libre(int $cliente_id, int $vehiculo_id, string $fecha_inicio, string $fecha_fin): int
     {
         $this->reservas_repository->begin_transaction();
@@ -148,17 +144,14 @@ class ReservasController implements ReservasControllerInterface
             $this->reservas_repository->commit();
 
             return $id;
-        } catch (Throwable $error) {
+        } catch (Throwable $excepcion) {
             $this->reservas_repository->rollback();
 
-            throw $error;
+            throw $excepcion;
         }
     }
 
-    /**
-     * @throws NotFoundException si no existe
-     */
-    private function obtener(int $id): Reserva
+    private function buscar_o_lanzar_no_encontrado(int $id): Reserva
     {
         $reserva = $this->reservas_repository->find_reserva_by_id($id);
 
@@ -169,12 +162,9 @@ class ReservasController implements ReservasControllerInterface
         return $reserva;
     }
 
-    /**
-     * @throws ConflictException si la reserva ya no esta activa
-     */
     private function obtener_activa(int $id): Reserva
     {
-        $reserva = $this->obtener($id);
+        $reserva = $this->buscar_o_lanzar_no_encontrado($id);
 
         if ($reserva->get_estado() !== Reserva::ACTIVA) {
             throw new ConflictException("La reserva ya está {$reserva->get_estado()}.");

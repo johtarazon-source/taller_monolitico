@@ -1,25 +1,6 @@
-/* =========================================================
-   Indice
-   1. Tokens, base y fondo
-   2. Layout general y cabecera
-   3. Botones, avisos y formularios
-   4. Tarjetas y estados vacios
-   5. Insignias de estado
-   6. Tablas
-   7. Panel (cabecera, reservas, resumen, flota)
-   8. Login
-   9. Responsive
-   10. Elementos ocultos y dialogos de confirmacion
-   ========================================================= */
-
-/* =========================================================
-   1. Tokens, base y fondo
-   ========================================================= */
-
 :root {
   color-scheme: dark;
 
-  /* Superficies y texto (tema oscuro con cristal translucido) */
   --color-fondo: #0f1114;
   --color-superficie-resaltada: rgb(255 255 255 / 7%);
   --color-texto: #f1f3f5;
@@ -30,7 +11,6 @@
   --vidrio-borde: rgb(255 255 255 / 12%);
   --desenfoque: blur(18px) saturate(1.2);
 
-  /* Acento amarillo-lima (acciones y navegacion activa) */
   --color-acento: #e4ff3a;
   --color-acento-resaltado: #f1ff7c;
   --color-sobre-acento: #12140a;
@@ -38,7 +18,6 @@
   --color-peligro: #ffa196;
   --color-peligro-fuerte: #d92d20;
 
-  /* Estados (texto claro sobre fondo translucido, >= 4.5:1) */
   --estado-disponible: #7ee2a8;
   --estado-disponible-fondo: rgb(34 197 94 / 16%);
   --estado-alquilado: #f6c25b;
@@ -50,7 +29,6 @@
   --estado-alerta: #ffa196;
   --estado-alerta-fondo: rgb(239 68 68 / 16%);
 
-  /* Radios, sombras y espacios */
   --radio-borde-chico: 12px;
   --radio-borde: 20px;
   --radio-borde-grande: 28px;
@@ -62,10 +40,8 @@
   --duracion-rapida: 160ms;
   --curva-salida-suave: ease-out;
 
-  /* Siluetas de montanas del fondo (decorativo) */
   --montanas: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1000 300' preserveAspectRatio='none'%3E%3Cpath fill='rgb(150,170,190)' fill-opacity='.13' d='M0 300V190L110 120L230 185L370 80L520 170L650 105L800 195L910 135L1000 180V300Z'/%3E%3Cpath fill='rgb(110,130,150)' fill-opacity='.16' d='M0 300V235L140 175L280 225L430 150L590 230L740 165L880 235L1000 205V300Z'/%3E%3C/svg%3E");
 
-  /* Fuente neutral sin serifas ni cursiva; si no carga, la del sistema */
   font-family:
     'Inter',
     system-ui,
@@ -100,7 +76,6 @@ body {
   background: var(--color-fondo);
 }
 
-/* Fondo atmosferico: sala oscura con ventanal y montanas desenfocadas (solo CSS/SVG). */
 body::before {
   content: '';
   position: fixed;
@@ -204,16 +179,6 @@ button {
   transform: none;
 }
 
-/* =========================================================
-   2. Layout general y cabecera
-   ========================================================= */
-
-.aplicacion {
-  display: flex;
-  flex-direction: column;
-  height: 100dvh;
-}
-
 .aplicacion__contenido {
   flex: 1;
   min-height: 0;
@@ -309,7 +274,6 @@ button {
   letter-spacing: -0.03em;
 }
 
-/* Capsula de cristal con el menu; la pestana activa va en lima. */
 .barra__navegacion {
   display: flex;
   gap: 0.25rem;
@@ -349,10 +313,6 @@ button {
   color: var(--color-sobre-acento);
   font-weight: 600;
 }
-
-/* =========================================================
-   3. Botones, avisos y formularios
-   ========================================================= */
 
 .boton {
   display: inline-flex;
@@ -595,11 +555,6 @@ button {
   background: var(--estado-alerta-fondo);
 }
 
-/* =========================================================
-   4. Tarjetas y estados vacios
-   ========================================================= */
-
-/* Cristal: superficie translucida con borde claro y desenfoque del fondo. */
 .panel__resumen,
 .panel__flota,
 .fila-reserva,
@@ -709,10 +664,6 @@ button {
   background: var(--estado-alquilado);
 }
 
-.tarjeta-dato--mantenimiento .tarjeta-dato__etiqueta::before {
-  background: var(--estado-mantenimiento);
-}
-
 .estado-vacio {
   grid-column: 1 / -1;
   padding: 2rem 1rem;
@@ -721,11 +672,6 @@ button {
   background: rgb(255 255 255 / 4%);
   border: 1px dashed var(--color-borde-fuerte);
   border-radius: var(--radio-borde);
-}
-
-.estado-vacio--error {
-  color: var(--color-peligro);
-  border-color: var(--color-peligro);
 }
 
 .vacio {
@@ -755,10 +701,6 @@ button {
   color: var(--color-texto-suave);
   font-size: 0.95rem;
 }
-
-/* =========================================================
-   5. Insignias de estado
-   ========================================================= */
 
 .insignia {
   display: inline-flex;
@@ -805,10 +747,6 @@ button {
   color: var(--estado-alerta);
   background: var(--estado-alerta-fondo);
 }
-
-/* =========================================================
-   6. Tablas
-   ========================================================= */
 
 .tabla-contenedor {
   overflow-x: auto;
@@ -867,10 +805,6 @@ button {
   border-color: rgb(255 143 132 / 35%);
 }
 
-/* =========================================================
-   7. Panel
-   ========================================================= */
-
 .panel {
   container-type: inline-size;
   display: grid;
@@ -906,7 +840,6 @@ button {
   margin-top: 1rem;
 }
 
-/* Marcas de la flota: chips de cristal arriba a la derecha */
 .panel__marcas {
   grid-area: marcas;
   display: flex;
@@ -933,7 +866,6 @@ button {
   backdrop-filter: var(--desenfoque);
 }
 
-/* Columna izquierda: reservas recientes como tarjetas */
 .panel__recientes {
   grid-area: recientes;
   display: flex;
@@ -1015,7 +947,6 @@ a.fila-reserva__contenido:hover .fila-reserva__enlace {
   justify-self: start;
 }
 
-/* Columna central: resumen con las 4 tarjetas-enlace */
 .panel__resumen {
   grid-area: resumen;
   display: flex;
@@ -1078,7 +1009,6 @@ a.icono-recuadro:hover {
   margin-top: auto;
 }
 
-/* Mini tarjeta-enlace: sin desenfoque propio (ya esta sobre cristal). */
 .indicador {
   display: grid;
   align-content: start;
@@ -1166,7 +1096,6 @@ a.icono-recuadro:hover {
   font-variant-numeric: tabular-nums;
 }
 
-/* Columna derecha: vehiculos con el auto grande */
 .panel__flota {
   grid-area: flota;
   position: relative;
@@ -1196,7 +1125,6 @@ a.icono-recuadro:hover {
   padding: 1rem 0 1.25rem;
 }
 
-/* Luz suave y sombra de contacto: apoyan al auto en el "suelo" */
 .panel__escena::before {
   content: '';
   position: absolute;
@@ -1339,10 +1267,6 @@ a.icono-recuadro:hover {
   letter-spacing: -0.02em;
 }
 
-/* =========================================================
-   8. Login
-   ========================================================= */
-
 .inicio-sesion {
   display: grid;
   place-items: center;
@@ -1362,11 +1286,6 @@ a.icono-recuadro:hover {
 .inicio-sesion__titulo {
   font-size: 2.25rem;
 }
-
-/* =========================================================
-   9. Responsive
-   10. Elementos ocultos y dialogos de confirmacion
-   ========================================================= */
 
 @media (max-width: 1100px) {
   .panel {
@@ -1390,11 +1309,6 @@ a.icono-recuadro:hover {
 }
 
 @media (max-width: 900px) {
-  .aplicacion {
-    height: auto;
-    min-height: 100dvh;
-  }
-
   .aplicacion__contenido {
     overflow-y: visible;
   }
@@ -1441,7 +1355,6 @@ a.icono-recuadro:hover {
     width: 100%;
   }
 
-  /* Las tablas pasan a tarjetas apiladas usando el titulo de cada celda. */
   .tabla thead {
     display: none;
   }
@@ -1508,11 +1421,6 @@ a.icono-recuadro:hover {
   }
 }
 
-/* =========================================================
-   10. Elementos ocultos y dialogos de confirmacion
-   ========================================================= */
-
-/* Algunas reglas de arriba usan display: flex/grid y anularian el atributo hidden. */
 [hidden] {
   display: none !important;
 }

@@ -5,12 +5,8 @@ namespace app\controllers\sessions;
 use app\controllers\exceptions\AppException;
 use app\controllers\exceptions\UnauthorizedException;
 use app\models\repositories\tokens_repository\TokensRepositoryInterface;
+use DateTimeImmutable;
 
-/**
- * Autenticacion del unico usuario administrador (definido en .env) mediante tokens aleatorios.
- * En el archivo de sesiones solo se guarda la huella (sha256) del token, para que una fuga del
- * archivo no exponga tokens utilizables.
- */
 class SessionsController implements SessionsControllerInterface
 {
     private TokensRepositoryInterface $tokens_repository;
@@ -44,7 +40,7 @@ class SessionsController implements SessionsControllerInterface
         }
 
         $token = bin2hex(random_bytes(32));
-        $expira_en = (new \DateTimeImmutable())->modify("+{$this->minutos_vigencia} minutes")->getTimestamp();
+        $expira_en = (new DateTimeImmutable())->modify("+{$this->minutos_vigencia} minutes")->getTimestamp();
         $this->tokens_repository->save_session($this->huella($token), $usuario, $expira_en);
 
         return ['token' => $token, 'usuario' => $usuario];

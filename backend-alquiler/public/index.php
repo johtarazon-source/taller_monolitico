@@ -1,13 +1,5 @@
 <?php
 
-/**
- * Punto de entrada de la API (JSON). Todas las rutas empiezan con /api; cualquier otra URL
- * responde 404. Las respuestas tienen la forma { "ok": bool, "mensaje": string, "data": mixed }.
- *
- * Secciones: funciones de apoyo (respuesta, CORS, token, cuerpo), tabla de rutas y atencion
- * de la peticion.
- */
-
 use app\controllers\config\ControllersConfig;
 use app\controllers\exceptions\AppException;
 use app\controllers\exceptions\UnauthorizedException;
@@ -19,31 +11,22 @@ Env::cargar(__DIR__ . '/../.env');
 date_default_timezone_set(Env::obtener('APP_TIMEZONE', 'America/Bogota'));
 
 $mostrar_detalles_error = Env::obtener('APP_ENV', 'production') !== 'production';
+$mensaje_ruta_inexistente = 'La página o recurso solicitado no existe.';
+$metodos_de_la_api = ['GET', 'POST', 'PUT', 'DELETE'];
 
-// La aplicacion puede estar en una subcarpeta de Apache (XAMPP) o servirse con `php -S`.
 $ruta_base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
 $metodo = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $ruta_cruda = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $es_api = str_starts_with($ruta_cruda, $ruta_base . '/api');
 
-/* ---------------------------------------------------------------------------
- * Funciones de apoyo
- * ------------------------------------------------------------------------- */
-
-/** Escribe la respuesta JSON estandar y termina. */
-function responder(int $codigo_estado, bool $ok, string $mensaje, mixed $datos = null): never
+function responder(int $codigo_estado, bool $exito, string $mensaje, mixed $datos = null): never
 {
     http_response_code($codigo_estado);
     header('Content-Type: application/json');
-    echo (string) json_encode(['ok' => $ok, 'mensaje' => $mensaje, 'data' => $datos], JSON_UNESCAPED_UNICODE);
+    echo (string) json_encode(['ok' => $exito, 'mensaje' => $mensaje, 'data' => $datos], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-/**
- * CORS: permite que el frontend, si esta en otro origen, llame a la API.
- * CORS_ALLOWED_ORIGIN (.env) admite "*" o una lista de origenes separados por coma;
- * el origen de la peticion debe coincidir exactamente.
- */
 function aplicar_cors(): void
 {
     $origenes_permitidos = array_map('trim', explode(',', Env::obtener('CORS_ALLOWED_ORIGIN', '')));
@@ -60,11 +43,6 @@ function aplicar_cors(): void
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 }
 
-/**
- * Token Bearer de la cabecera Authorization. Con $exigir comprueba que sea valido.
- *
- * @throws UnauthorizedException si se exige y el token falta, es invalido o expiro
- */
 function leer_token(bool $exigir): string
 {
     $cabecera = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
@@ -77,99 +55,77 @@ function leer_token(bool $exigir): string
     return $token;
 }
 
-/**
- * Cuerpo de la peticion como arreglo. Acepta JSON y formularios (x-www-form-urlencoded).
- * Solo se llama en las rutas que necesitan el cuerpo.
- *
- * @return array<string, mixed>
- * @throws AppException si hay contenido pero no se pudo interpretar
- */
 function leer_cuerpo(): array
 {
-    $crudo = (string) file_get_contents('php://input');
-    $tipo = strtolower(trim(explode(';', $_SERVER['CONTENT_TYPE'] ?? '')[0]));
-    $interpretado = null;
+    $cuerpo_crudo = (string) file_get_contents('php://input');
+    $tipo_contenido = strtolower(trim(explode(';', $_SERVER['CONTENT_TYPE'] ?? '')[0]));
+    $cuerpo_interpretado = null;
 
-    if ($tipo === 'application/json' || str_ends_with($tipo, '+json')) {
-        $datos = json_decode($crudo, true);
-        $interpretado = is_array($datos) ? $datos : null;
-    } elseif ($tipo === 'application/x-www-form-urlencoded') {
-        parse_str($crudo, $interpretado);
+    if ($tipo_contenido === 'application/json' || str_ends_with($tipo_contenido, '+json')) {
+        $datos = json_decode($cuerpo_crudo, true);
+        $cuerpo_interpretado = is_array($datos) ? $datos : null;
+    } elseif ($tipo_contenido === 'application/x-www-form-urlencoded') {
+        parse_str($cuerpo_crudo, $cuerpo_interpretado);
     }
 
-    if ($interpretado === null && trim($crudo) !== '') {
+    if ($cuerpo_interpretado === null && trim($cuerpo_crudo) !== '') {
         throw new AppException('El cuerpo de la solicitud no es un JSON válido (UTF-8).', 400);
     }
 
-    return (array) $interpretado;
+    return (array) $cuerpo_interpretado;
 }
 
-/* ---------------------------------------------------------------------------
- * Rutas de la API (relativas a /api)
- *
- * Cada ruta: [metodo, ruta, requiere_token, funcion]
- *   - "{id}" captura un numero.
- *   - La funcion recibe ($ids, $consulta, $cuerpo, $token) y devuelve [codigo_http, mensaje, datos].
- *   - $cuerpo es una funcion: el cuerpo solo se lee (y valida) si la ruta la llama.
- * ------------------------------------------------------------------------- */
-
-$sesiones = fn () => ControllersConfig::get_sessions_controller();
-$vehiculos = fn () => ControllersConfig::get_vehiculos_controller();
-$clientes = fn () => ControllersConfig::get_clientes_controller();
-$reservas = fn () => ControllersConfig::get_reservas_controller();
-$reportes = fn () => ControllersConfig::get_reportes_controller();
+$controlador_sesiones = fn () => ControllersConfig::get_sessions_controller();
+$controlador_vehiculos = fn () => ControllersConfig::get_vehiculos_controller();
+$controlador_clientes = fn () => ControllersConfig::get_clientes_controller();
+$controlador_reservas = fn () => ControllersConfig::get_reservas_controller();
+$controlador_reportes = fn () => ControllersConfig::get_reportes_controller();
 
 $rutas = [
-    ['POST', '/auth/login', false, fn ($ids, $q, $cuerpo) => [200, 'Inicio de sesión exitoso.', $sesiones()->login($cuerpo())]],
-    ['POST', '/auth/logout', true, fn ($ids, $q, $cuerpo, $token) => [200, 'Sesión cerrada correctamente.', $sesiones()->logout($token)]],
+    ['POST', '/auth/login', false, fn ($ids_ruta, $consulta, $cuerpo) => [200, 'Inicio de sesión exitoso.', $controlador_sesiones()->login($cuerpo())]],
+    ['POST', '/auth/logout', true, fn ($ids_ruta, $consulta, $cuerpo, $token) => [200, 'Sesión cerrada correctamente.', $controlador_sesiones()->logout($token)]],
 
-    ['GET', '/resumen', true, fn () => [200, 'Resumen obtenido.', $reportes()->get_resumen()]],
+    ['GET', '/resumen', true, fn () => [200, 'Resumen obtenido.', $controlador_reportes()->get_resumen()]],
 
-    // "disponibles" va antes de "{id}" para que no se confunda con un id.
-    ['GET', '/vehiculos/disponibles', true, fn ($ids, $q) => [200, 'Vehículos disponibles obtenidos.',
-        $vehiculos()->get_vehiculos_disponibles($q['fecha_inicio'] ?? null, $q['fecha_fin'] ?? null)]],
-    ['GET', '/vehiculos', true, fn ($ids, $q) => [200, 'Vehículos obtenidos.', $vehiculos()->get_vehiculos_all($q)]],
-    ['POST', '/vehiculos', true, fn ($ids, $q, $cuerpo) => [201, 'Vehículo registrado correctamente.', $vehiculos()->save_vehiculo($cuerpo())]],
-    ['GET', '/vehiculos/{id}', true, fn ($ids) => [200, 'Vehículo obtenido.', $vehiculos()->get_vehiculo($ids[0])]],
-    ['PUT', '/vehiculos/{id}', true, fn ($ids, $q, $cuerpo) => [200, 'Vehículo actualizado correctamente.', $vehiculos()->update_vehiculo($ids[0], $cuerpo())]],
-    ['DELETE', '/vehiculos/{id}', true, fn ($ids) => [200, 'Vehículo eliminado correctamente.', $vehiculos()->delete_vehiculo($ids[0])]],
-    ['GET', '/vehiculos/{id}/historial', true, fn ($ids) => [200, 'Historial del vehículo obtenido.', $vehiculos()->get_historial($ids[0])]],
+    ['GET', '/vehiculos/disponibles', true, fn ($ids_ruta, $consulta) => [200, 'Vehículos disponibles obtenidos.',
+        $controlador_vehiculos()->get_vehiculos_disponibles($consulta['fecha_inicio'] ?? null, $consulta['fecha_fin'] ?? null)]],
+    ['GET', '/vehiculos', true, fn ($ids_ruta, $consulta) => [200, 'Vehículos obtenidos.', $controlador_vehiculos()->get_vehiculos_all($consulta)]],
+    ['POST', '/vehiculos', true, fn ($ids_ruta, $consulta, $cuerpo) => [201, 'Vehículo registrado correctamente.', $controlador_vehiculos()->save_vehiculo($cuerpo())]],
+    ['GET', '/vehiculos/{id}', true, fn ($ids_ruta) => [200, 'Vehículo obtenido.', $controlador_vehiculos()->get_vehiculo($ids_ruta[0])]],
+    ['PUT', '/vehiculos/{id}', true, fn ($ids_ruta, $consulta, $cuerpo) => [200, 'Vehículo actualizado correctamente.', $controlador_vehiculos()->update_vehiculo($ids_ruta[0], $cuerpo())]],
+    ['DELETE', '/vehiculos/{id}', true, fn ($ids_ruta) => [200, 'Vehículo eliminado correctamente.', $controlador_vehiculos()->delete_vehiculo($ids_ruta[0])]],
+    ['GET', '/vehiculos/{id}/historial', true, fn ($ids_ruta) => [200, 'Historial del vehículo obtenido.', $controlador_vehiculos()->get_historial($ids_ruta[0])]],
 
-    ['GET', '/clientes', true, fn ($ids, $q) => [200, 'Clientes obtenidos.', $clientes()->get_clientes_all($q['buscar'] ?? null)]],
-    ['POST', '/clientes', true, fn ($ids, $q, $cuerpo) => [201, 'Cliente registrado correctamente.', $clientes()->save_cliente($cuerpo())]],
-    ['GET', '/clientes/{id}', true, fn ($ids) => [200, 'Cliente obtenido.', $clientes()->get_cliente($ids[0])]],
-    ['PUT', '/clientes/{id}', true, fn ($ids, $q, $cuerpo) => [200, 'Cliente actualizado correctamente.', $clientes()->update_cliente($ids[0], $cuerpo())]],
-    ['DELETE', '/clientes/{id}', true, fn ($ids) => [200, 'Cliente eliminado correctamente.', $clientes()->delete_cliente($ids[0])]],
-    ['GET', '/clientes/{id}/historial', true, fn ($ids) => [200, 'Historial del cliente obtenido.', $clientes()->get_historial($ids[0])]],
+    ['GET', '/clientes', true, fn ($ids_ruta, $consulta) => [200, 'Clientes obtenidos.', $controlador_clientes()->get_clientes_all($consulta['buscar'] ?? null)]],
+    ['POST', '/clientes', true, fn ($ids_ruta, $consulta, $cuerpo) => [201, 'Cliente registrado correctamente.', $controlador_clientes()->save_cliente($cuerpo())]],
+    ['GET', '/clientes/{id}', true, fn ($ids_ruta) => [200, 'Cliente obtenido.', $controlador_clientes()->get_cliente($ids_ruta[0])]],
+    ['PUT', '/clientes/{id}', true, fn ($ids_ruta, $consulta, $cuerpo) => [200, 'Cliente actualizado correctamente.', $controlador_clientes()->update_cliente($ids_ruta[0], $cuerpo())]],
+    ['DELETE', '/clientes/{id}', true, fn ($ids_ruta) => [200, 'Cliente eliminado correctamente.', $controlador_clientes()->delete_cliente($ids_ruta[0])]],
+    ['GET', '/clientes/{id}/historial', true, fn ($ids_ruta) => [200, 'Historial del cliente obtenido.', $controlador_clientes()->get_historial($ids_ruta[0])]],
 
-    ['GET', '/reservas', true, fn ($ids, $q) => [200, 'Reservas obtenidas.', $reservas()->get_reservas_all($q)]],
-    ['POST', '/reservas', true, fn ($ids, $q, $cuerpo) => [201, 'Reserva registrada correctamente.', $reservas()->save_reserva($cuerpo())]],
-    ['GET', '/reservas/{id}', true, fn ($ids) => [200, 'Reserva obtenida.', $reservas()->get_reserva($ids[0])]],
-    ['POST', '/reservas/{id}/devolucion', true, fn ($ids, $q, $cuerpo) => [200, 'Devolución registrada correctamente.',
-        $reservas()->return_reserva($ids[0], filter_var($cuerpo()['mantenimiento'] ?? false, FILTER_VALIDATE_BOOLEAN))]],
-    ['POST', '/reservas/{id}/cancelacion', true, fn ($ids) => [200, 'Reserva cancelada correctamente.', $reservas()->cancel_reserva($ids[0])]],
+    ['GET', '/reservas', true, fn ($ids_ruta, $consulta) => [200, 'Reservas obtenidas.', $controlador_reservas()->get_reservas_all($consulta)]],
+    ['POST', '/reservas', true, fn ($ids_ruta, $consulta, $cuerpo) => [201, 'Reserva registrada correctamente.', $controlador_reservas()->save_reserva($cuerpo())]],
+    ['GET', '/reservas/{id}', true, fn ($ids_ruta) => [200, 'Reserva obtenida.', $controlador_reservas()->get_reserva($ids_ruta[0])]],
+    ['POST', '/reservas/{id}/devolucion', true, fn ($ids_ruta, $consulta, $cuerpo) => [200, 'Devolución registrada correctamente.',
+        $controlador_reservas()->return_reserva($ids_ruta[0], filter_var($cuerpo()['mantenimiento'] ?? false, FILTER_VALIDATE_BOOLEAN))]],
+    ['POST', '/reservas/{id}/cancelacion', true, fn ($ids_ruta) => [200, 'Reserva cancelada correctamente.', $controlador_reservas()->cancel_reserva($ids_ruta[0])]],
 ];
-
-/* ---------------------------------------------------------------------------
- * Atencion de la peticion
- * ------------------------------------------------------------------------- */
 
 try {
     if ($es_api) {
         aplicar_cors();
     }
 
-    // Ruta relativa a /api: "/taller/.../public/api/vehiculos/5" -> "/vehiculos/5"
     $ruta_decodificada = rawurldecode($ruta_cruda);
     $prefijo_api = $ruta_base . '/api';
-    $ruta = null;
+    $ruta_relativa_a_api = null;
 
     if ($es_api && str_starts_with($ruta_decodificada, $prefijo_api . '/') && strlen($ruta_decodificada) > strlen($prefijo_api . '/')) {
-        $ruta = substr($ruta_decodificada, strlen($prefijo_api));
+        $ruta_relativa_a_api = substr($ruta_decodificada, strlen($prefijo_api));
     }
 
-    if ($ruta === null) {
-        responder(404, false, 'La página o recurso solicitado no existe.');
+    if ($ruta_relativa_a_api === null) {
+        responder(404, false, $mensaje_ruta_inexistente);
     }
 
     if ($metodo === 'OPTIONS') {
@@ -177,22 +133,21 @@ try {
         exit;
     }
 
-    foreach ($rutas as [$metodo_ruta, $patron, $requiere_token, $accion]) {
-        $expresion = '#^' . str_replace('{id}', '([0-9]+)', $patron) . '$#';
+    foreach ($rutas as [$metodo_ruta, $patron_ruta, $requiere_token, $manejador]) {
+        $expresion_ruta = '#^' . str_replace('{id}', '([0-9]+)', $patron_ruta) . '$#';
 
-        if ($metodo !== $metodo_ruta || !preg_match($expresion, $ruta, $coincidencias)) {
+        if ($metodo !== $metodo_ruta || !preg_match($expresion_ruta, $ruta_relativa_a_api, $coincidencias)) {
             continue;
         }
 
         $token = leer_token($requiere_token);
-        $ids = array_map('intval', array_slice($coincidencias, 1));
-        [$codigo, $mensaje, $datos] = $accion($ids, $_GET, 'leer_cuerpo', $token);
-        responder($codigo, true, $mensaje, $datos);
+        $ids_ruta = array_map('intval', array_slice($coincidencias, 1));
+        [$codigo_estado, $mensaje, $datos] = $manejador($ids_ruta, $_GET, 'leer_cuerpo', $token);
+        responder($codigo_estado, true, $mensaje, $datos);
     }
 
-    // Ninguna ruta coincidio: los 4 metodos de la API dan 404 y cualquier otro, 405.
-    if (in_array($metodo, ['GET', 'POST', 'PUT', 'DELETE'], true)) {
-        responder(404, false, 'La página o recurso solicitado no existe.');
+    if (in_array($metodo, $metodos_de_la_api, true)) {
+        responder(404, false, $mensaje_ruta_inexistente);
     }
 
     responder(405, false, 'Método no permitido.');

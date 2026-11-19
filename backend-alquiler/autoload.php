@@ -1,14 +1,5 @@
 <?php
 
-/**
- * Carga automatica de clases, sin Composer.
- *
- * Convencion: el namespace "app\carpeta\subcarpeta" es la ruta de carpetas y el nombre de la
- * clase en CamelCase es el archivo en snake_case. Ejemplo:
- *   app\controllers\vehiculos\VehiculosController -> controllers/vehiculos/vehiculos_controller.php
- */
-
-// Las excepciones comparten un solo archivo, asi que se cargan de una vez.
 require_once __DIR__ . '/controllers/exceptions/exceptions.php';
 
 spl_autoload_register(function (string $clase): void {

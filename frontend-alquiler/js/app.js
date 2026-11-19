@@ -1,47 +1,19 @@
-/**
- * Aplicacion web del Gestor de Alquiler (frontend).
- *
- * Un solo archivo para todas las paginas. Secciones, en orden:
- *   1. API: URL base, sesion (token) y cliente HTTP
- *   2. Utilidades: DOM seguro, iconos, formatos y avisos
- *   3. Componentes: campos, formularios, modal, tarjetas y tabla
- *   4. Cabecera: guarda de sesion y menu
- *   5. Paginas: login, panel, vehiculos, clientes, reservas, disponibilidad e historial
- */
 
-/* ===========================================================================
- * Acceso a la API del backend: URL base, token de sesion y cliente HTTP.
- * ========================================================================= */
 
-/**
- * URL base de la API. Se calcula a partir de donde esta servido el frontend, asumiendo que
- * las carpetas frontend-alquiler y backend-alquiler estan juntas (como en XAMPP):
- *   http://localhost:8080/taller_monolitico/frontend-alquiler/  ->
- *   http://localhost:8080/taller_monolitico/backend-alquiler/public/api
- * Si se sirve de otra forma (por ejemplo `php -S localhost:8000 -t public`), reemplaza este valor
- * por la URL real, como 'http://localhost:8000/api'.
- */
 const URL_BASE_API = new URL(
   '../backend-alquiler/public/api',
   `${window.location.origin}${window.location.pathname}`,
 ).href;
 
 const CLAVE_TOKEN = 'alquiler_token';
-const CLAVE_USUARIO = 'alquiler_usuario';
 
-/** Guarda en el navegador el token y el usuario de la sesion actual. */
 const Sesion = {
-  guardar(token, usuario) {
+  guardar(token) {
     localStorage.setItem(CLAVE_TOKEN, token);
-    localStorage.setItem(CLAVE_USUARIO, usuario);
   },
 
   obtenerToken() {
     return localStorage.getItem(CLAVE_TOKEN);
-  },
-
-  obtenerUsuario() {
-    return localStorage.getItem(CLAVE_USUARIO);
   },
 
   haySesion() {
@@ -50,17 +22,10 @@ const Sesion = {
 
   limpiar() {
     localStorage.removeItem(CLAVE_TOKEN);
-    localStorage.removeItem(CLAVE_USUARIO);
   },
 };
 
-/** Error devuelto por la API (o por la red) con el codigo HTTP y los errores por campo. */
 class ApiError extends Error {
-  /**
-   * @param {string} mensaje
-   * @param {number} codigoEstado 0 cuando no hubo respuesta del servidor
-   * @param {Record<string, string> | null} errores errores de validacion por campo (422)
-   */
   constructor(mensaje, codigoEstado, errores = null) {
     super(mensaje);
     this.name = 'ApiError';
@@ -69,17 +34,15 @@ class ApiError extends Error {
   }
 }
 
-/** Cliente HTTP. Todas las respuestas de la API tienen la forma { ok, mensaje, data }. */
+function relanzarSiNoEsErrorDeApi(error) {
+  if (!(error instanceof ApiError)) {
+    throw error;
+  }
+}
+
 class ApiClient {
-  /** Funcion que se ejecuta cuando el token falta o expiro (401). */
   static alNoAutorizarse = null;
 
-  /**
-   * @param {string} metodo
-   * @param {string} ruta ruta de la API que empieza con "/"
-   * @param {{ cuerpo?: object, consulta?: Record<string, unknown> }} [opciones]
-   * @returns {Promise<{ data: any, mensaje: string }>}
-   */
   static async solicitar(metodo, ruta, { cuerpo, consulta } = {}) {
     const url = new URL(`${URL_BASE_API}${ruta}`);
 
@@ -150,23 +113,9 @@ class ApiClient {
   }
 }
 
-/* ===========================================================================
- * Utilidades compartidas: construccion segura del DOM, iconos, formatos y avisos.
- * Los datos de la API siempre se insertan como texto (nunca con innerHTML).
- * ========================================================================= */
+const ESPACIO_DE_NOMBRES_SVG = 'http://www.w3.org/2000/svg';
 
-const ESPACIO_SVG = 'http://www.w3.org/2000/svg';
-
-/**
- * Crea un elemento HTML. Los hijos pueden ser texto, nodos, arreglos o valores vacios.
- * Atributos especiales: "class", "dataset" y los eventos "onclick", "onsubmit", etc.
- *
- * @param {string} etiqueta
- * @param {Record<string, any>} [atributos]
- * @param {...any} hijos
- * @returns {HTMLElement}
- */
-function h(etiqueta, atributos = {}, ...hijos) {
+function crearElemento(etiqueta, atributos = {}, ...hijos) {
   const elemento = document.createElement(etiqueta);
   aplicarAtributos(elemento, atributos);
   agregarHijos(elemento, hijos);
@@ -174,9 +123,8 @@ function h(etiqueta, atributos = {}, ...hijos) {
   return elemento;
 }
 
-/** Igual que h(), pero para elementos SVG. */
-function svg(etiqueta, atributos = {}, ...hijos) {
-  const elemento = document.createElementNS(ESPACIO_SVG, etiqueta);
+function crearElementoSvg(etiqueta, atributos = {}, ...hijos) {
+  const elemento = document.createElementNS(ESPACIO_DE_NOMBRES_SVG, etiqueta);
   aplicarAtributos(elemento, atributos);
   agregarHijos(elemento, hijos);
 
@@ -209,10 +157,6 @@ function agregarHijos(padre, hijos) {
   }
 }
 
-/* ---------------------------------------------------------------------------
- * Iconos (trazos SVG de 24x24)
- * ------------------------------------------------------------------------- */
-
 const TRAZOS_ICONOS = {
   exito: ['M20 6 9 17l-5-5'],
   error: ['M18 6 6 18', 'M6 6l12 12'],
@@ -236,14 +180,8 @@ const TRAZOS_ICONOS = {
   mas: ['M12 5v14M5 12h14'],
 };
 
-/**
- * Icono SVG de trazo que hereda el color del texto.
- *
- * @param {keyof typeof TRAZOS_ICONOS} nombre
- * @param {{ grosor?: number, clase?: string }} [opciones]
- */
 function icono(nombre, { grosor = 2, clase = 'icono' } = {}) {
-  return svg(
+  return crearElementoSvg(
     'svg',
     {
       class: clase,
@@ -256,15 +194,12 @@ function icono(nombre, { grosor = 2, clase = 'icono' } = {}) {
       'aria-hidden': 'true',
       focusable: 'false',
     },
-    TRAZOS_ICONOS[nombre].map((trazo) => svg('path', { d: trazo })),
+    TRAZOS_ICONOS[nombre].map((trazo) => crearElementoSvg('path', { d: trazo })),
   );
 }
 
-/* ---------------------------------------------------------------------------
- * Formatos
- * ------------------------------------------------------------------------- */
-
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+const MILISEGUNDOS_POR_DIA = 24 * 60 * 60 * 1000;
 
 const ETIQUETAS_ESTADO = {
   disponible: 'Disponible',
@@ -277,14 +212,12 @@ const ETIQUETAS_ESTADO = {
   programada: 'Programada',
 };
 
-/** Separa "2026-11-13" en anio, mes y dia numericos (sin usar zonas horarias). */
 function partesFecha(fechaIso) {
   const [anio, mes, dia] = String(fechaIso).slice(0, 10).split('-').map(Number);
 
   return { anio, mes, dia };
 }
 
-/** "2026-11-13" -> "13 nov 2026" */
 function formatearFecha(fechaIso) {
   if (!fechaIso) {
     return '-';
@@ -295,7 +228,6 @@ function formatearFecha(fechaIso) {
   return `${dia} ${MESES[mes - 1]} ${anio}`;
 }
 
-/** "2026-11-20" -> "20 nov" */
 function formatearFechaCorta(fechaIso) {
   if (!fechaIso) {
     return '-';
@@ -306,17 +238,15 @@ function formatearFechaCorta(fechaIso) {
   return `${dia} ${MESES[mes - 1]}`;
 }
 
-/** Dias incluidos entre dos fechas (ambos extremos cuentan). */
 function contarDias(fechaInicio, fechaFin) {
   const inicio = partesFecha(fechaInicio);
   const fin = partesFecha(fechaFin);
   const utcInicio = Date.UTC(inicio.anio, inicio.mes - 1, inicio.dia);
   const utcFin = Date.UTC(fin.anio, fin.mes - 1, fin.dia);
 
-  return Math.round((utcFin - utcInicio) / 86400000) + 1;
+  return Math.round((utcFin - utcInicio) / MILISEGUNDOS_POR_DIA) + 1;
 }
 
-/** Fecha de hoy en el navegador con formato AAAA-MM-DD. */
 function hoyIso() {
   const hoy = new Date();
   const mes = String(hoy.getMonth() + 1).padStart(2, '0');
@@ -325,7 +255,6 @@ function hoyIso() {
   return `${hoy.getFullYear()}-${mes}-${dia}`;
 }
 
-/** "Marca Modelo (anio)" */
 function textoVehiculo(vehiculo) {
   return vehiculo ? `${vehiculo.marca} ${vehiculo.modelo} (${vehiculo.anio})` : '-';
 }
@@ -334,37 +263,25 @@ function pluralizar(cantidad, singular, plural) {
   return cantidad === 1 ? singular : plural;
 }
 
-/** Etiqueta de estado coloreada. */
 function insignia(estado) {
-  return h('span', { class: `insignia insignia--${estado}` }, ETIQUETAS_ESTADO[estado] ?? estado);
+  return crearElemento('span', { class: `insignia insignia--${estado}` }, ETIQUETAS_ESTADO[estado] ?? estado);
 }
 
-/* ---------------------------------------------------------------------------
- * Avisos (mensajes de exito o error de la pagina)
- * ------------------------------------------------------------------------- */
-
-/** Muestra un aviso arriba de la pagina. */
 function avisar(texto, tipo = 'exito') {
   document.getElementById('avisos').replaceChildren(
-    h(
+    crearElemento(
       'p',
       { class: `alerta alerta--${tipo}`, role: tipo === 'error' ? 'alert' : 'status' },
       icono(tipo === 'exito' ? 'exito' : 'error'),
-      h('span', {}, texto),
+      crearElemento('span', {}, texto),
     ),
   );
 }
 
-/* ---------------------------------------------------------------------------
- * Direccion de la pagina (filtros en la URL) y logotipo
- * ------------------------------------------------------------------------- */
-
-/** Parametros de la URL actual (por ejemplo "?estado=disponible"). */
 function leerConsulta() {
   return new URLSearchParams(window.location.search);
 }
 
-/** Direccion con parametros de consulta, omitiendo los vacios. */
 function conConsulta(direccion, parametros) {
   const consulta = new URLSearchParams();
 
@@ -379,12 +296,11 @@ function conConsulta(direccion, parametros) {
   return texto === '' ? direccion : `${direccion}?${texto}`;
 }
 
-/** Logotipo CarRent. */
 function logo() {
-  return h(
+  return crearElemento(
     'span',
     { class: 'logo' },
-    svg(
+    crearElementoSvg(
       'svg',
       {
         class: 'logo__marca',
@@ -395,44 +311,33 @@ function logo() {
         'aria-hidden': 'true',
         focusable: 'false',
       },
-      svg('path', { d: 'M31 10.5A14 14 0 1 0 31 29.5', 'stroke-width': 4.5 }),
-      svg('path', { d: 'M25.5 16a6.5 6.5 0 1 0 0 8', 'stroke-width': 3.5 }),
+      crearElementoSvg('path', { d: 'M31 10.5A14 14 0 1 0 31 29.5', 'stroke-width': 4.5 }),
+      crearElementoSvg('path', { d: 'M25.5 16a6.5 6.5 0 1 0 0 8', 'stroke-width': 3.5 }),
     ),
-    h('span', { class: 'logo__texto' }, 'CarRent'),
+    crearElemento('span', { class: 'logo__texto' }, 'CarRent'),
   );
 }
 
-/* ===========================================================================
- * Piezas de interfaz compartidas por las paginas: campos y formularios con errores por campo,
- * dialogo de confirmacion, tarjetas y tabla de reservas.
- * ========================================================================= */
-
-
-/* ===========================================================================
- * Estructura de pagina
- * ========================================================================= */
-
 function cabeceraPagina(titulo, descripcion, accion = null) {
-  return h(
+  return crearElemento(
     'header',
     { class: 'pagina__cabecera' },
-    h(
+    crearElemento(
       'div',
       {},
-      h('h1', {}, titulo),
-      descripcion ? h('p', { class: 'texto-suave' }, descripcion) : null,
+      crearElemento('h1', {}, titulo),
+      descripcion ? crearElemento('p', { class: 'texto-suave' }, descripcion) : null,
     ),
     accion,
   );
 }
 
-/** Enlace con aspecto de boton. */
 function enlaceBoton(texto, direccion, clase) {
-  return h('a', { class: `boton ${clase}`, href: direccion }, texto);
+  return crearElemento('a', { class: `boton ${clase}`, href: direccion }, texto);
 }
 
 function botonAccion(texto, clase, alHacerClic) {
-  return h(
+  return crearElemento(
     'button',
     { type: 'button', class: `boton boton--chico ${clase}`, onclick: alHacerClic },
     texto,
@@ -440,51 +345,40 @@ function botonAccion(texto, clase, alHacerClic) {
 }
 
 function estadoVacio(texto) {
-  return h('p', { class: 'estado-vacio' }, texto);
+  return crearElemento('p', { class: 'estado-vacio' }, texto);
 }
 
-/** Contenido de una pagina de error (404, 409, sin conexion, etc.). */
 function paginaError(codigoEstado, mensaje) {
-  return h(
+  return crearElemento(
     'section',
     { class: 'pagina' },
     cabeceraPagina(codigoEstado ? `Error ${codigoEstado}` : 'Sin conexión', mensaje),
-    h('p', {}, enlaceBoton('Ir al inicio', 'home.html', 'boton--secundario')),
+    crearElemento('p', {}, enlaceBoton('Ir al inicio', 'home.html', 'boton--secundario')),
   );
 }
 
-/**
- * Pinta una pagina: ejecuta "construir" (que consulta la API y devuelve el contenido) y lo coloca
- * en la vista. Si la API falla (404, red, etc.) muestra la pagina de error.
- */
 async function pintarPagina(vista, construir) {
   try {
     vista.replaceChildren(await construir());
   } catch (error) {
-    if (!(error instanceof ApiError)) {
-      throw error;
-    }
+    relanzarSiNoEsErrorDeApi(error);
 
-    // Con 401 ya se limpio la sesion y se esta yendo al inicio de sesion.
-    if (error.codigoEstado !== 401) {
+    const sesionYaCerrada = error.codigoEstado === 401;
+
+    if (!sesionYaCerrada) {
       vista.replaceChildren(paginaError(error.codigoEstado, error.message));
     }
   }
 }
 
-/* ===========================================================================
- * Campos y formularios
- * ========================================================================= */
-
-/** Campo de texto con etiqueta. Los errores se agregan despues con mostrarErrores(). */
 function campo({ nombre, etiqueta, tipo = 'text', valor = '', ayuda = null, ancho = false, atributos = {} }) {
   const id = `campo-${nombre}`;
 
-  return h(
+  return crearElemento(
     'div',
     { class: ancho ? 'campo campo--ancho' : 'campo' },
-    h('label', { class: 'campo__etiqueta', for: id }, etiqueta),
-    h('input', {
+    crearElemento('label', { class: 'campo__etiqueta', for: id }, etiqueta),
+    crearElemento('input', {
       class: 'campo__control',
       id,
       name: nombre,
@@ -492,23 +386,22 @@ function campo({ nombre, etiqueta, tipo = 'text', valor = '', ayuda = null, anch
       value: valor ?? '',
       ...atributos,
     }),
-    ayuda ? h('small', { class: 'texto-suave' }, ayuda) : null,
+    ayuda ? crearElemento('small', { class: 'texto-suave' }, ayuda) : null,
   );
 }
 
-/** Lista desplegable con etiqueta. Las opciones son { valor, texto, deshabilitada }. */
 function campoSeleccion({ nombre, etiqueta, opciones, seleccionado = '', ancho = false, requerido = false }) {
   const id = `campo-${nombre}`;
 
-  return h(
+  return crearElemento(
     'div',
     { class: ancho ? 'campo campo--ancho' : 'campo' },
-    h('label', { class: 'campo__etiqueta', for: id }, etiqueta),
-    h(
+    crearElemento('label', { class: 'campo__etiqueta', for: id }, etiqueta),
+    crearElemento(
       'select',
       { class: 'campo__control', id, name: nombre, required: requerido },
       opciones.map((opcion) =>
-        h(
+        crearElemento(
           'option',
           {
             value: opcion.valor,
@@ -522,17 +415,15 @@ function campoSeleccion({ nombre, etiqueta, opciones, seleccionado = '', ancho =
   );
 }
 
-/** Parrafo de alerta oculto donde se muestran los errores generales de un formulario. */
 function alertaGeneral() {
-  return h('p', { class: 'alerta alerta--error', role: 'alert', hidden: true });
+  return crearElemento('p', { class: 'alerta alerta--error', role: 'alert', hidden: true });
 }
 
 function mostrarErrorGeneral(alerta, texto) {
-  alerta.replaceChildren(icono('alerta'), h('span', {}, texto));
+  alerta.replaceChildren(icono('alerta'), crearElemento('span', {}, texto));
   alerta.hidden = false;
 }
 
-/** Quita los errores pintados por mostrarErrores() y oculta la alerta general. */
 function limpiarErrores(formulario, alerta) {
   formulario.querySelectorAll('.mensaje-error').forEach((nodo) => nodo.remove());
   formulario
@@ -541,13 +432,6 @@ function limpiarErrores(formulario, alerta) {
   alerta.hidden = true;
 }
 
-/**
- * Pinta cada error de validacion bajo su campo.
- *
- * @param {HTMLElement} formulario
- * @param {Record<string, string>} errores
- * @returns {string[]} mensajes que no corresponden a ningun campo del formulario
- */
 function mostrarErrores(formulario, errores) {
   const sinCampo = [];
   let primerControl = null;
@@ -563,7 +447,7 @@ function mostrarErrores(formulario, errores) {
 
     control.setAttribute('aria-invalid', 'true');
     contenedor.append(
-      h('small', { class: 'mensaje-error' }, icono('alerta'), h('span', {}, mensaje)),
+      crearElemento('small', { class: 'mensaje-error' }, icono('alerta'), crearElemento('span', {}, mensaje)),
     );
     primerControl ??= control;
   }
@@ -573,10 +457,6 @@ function mostrarErrores(formulario, errores) {
   return sinCampo;
 }
 
-/**
- * Conecta el envio de un formulario con una accion que llama a la API. Los errores 422 se pintan
- * bajo cada campo y los demas (409, red, etc.) en la alerta general.
- */
 function manejarEnvio(formulario, alerta, accion) {
   formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
@@ -588,9 +468,7 @@ function manejarEnvio(formulario, alerta, accion) {
     try {
       await accion(Object.fromEntries(new FormData(formulario)));
     } catch (error) {
-      if (!(error instanceof ApiError)) {
-        throw error;
-      }
+      relanzarSiNoEsErrorDeApi(error);
 
       if (error.codigoEstado === 422 && error.errores) {
         const sinCampo = mostrarErrores(formulario, error.errores);
@@ -607,36 +485,27 @@ function manejarEnvio(formulario, alerta, accion) {
   });
 }
 
-/* ===========================================================================
- * Dialogo de confirmacion y acciones
- * ========================================================================= */
-
-/**
- * Pide confirmacion en un dialogo modal.
- *
- * @returns {Promise<{ aceptado: boolean, mantenimiento: boolean }>}
- */
 function confirmar({ titulo, mensaje, textoBoton, peligrosa = false, opcionMantenimiento = false }) {
   return new Promise((resolver) => {
     const casilla = opcionMantenimiento
-      ? h('input', { type: 'checkbox', name: 'mantenimiento' })
+      ? crearElemento('input', { type: 'checkbox', name: 'mantenimiento' })
       : null;
 
-    const dialogo = h(
+    const dialogo = crearElemento(
       'dialog',
       { class: 'dialogo', 'aria-labelledby': 'dialogo-titulo' },
-      h(
+      crearElemento(
         'form',
         { class: 'formulario', method: 'dialog' },
-        h('h1', { id: 'dialogo-titulo' }, peligrosa ? icono('alerta') : null, titulo),
-        h('p', {}, mensaje),
+        crearElemento('h1', { id: 'dialogo-titulo' }, peligrosa ? icono('alerta') : null, titulo),
+        crearElemento('p', {}, mensaje),
         casilla
-          ? h('label', { class: 'casilla' }, casilla, 'Enviar el vehículo a mantenimiento')
+          ? crearElemento('label', { class: 'casilla' }, casilla, 'Enviar el vehículo a mantenimiento')
           : null,
-        h(
+        crearElemento(
           'div',
           { class: 'formulario__pie' },
-          h(
+          crearElemento(
             'button',
             {
               type: 'button',
@@ -645,7 +514,7 @@ function confirmar({ titulo, mensaje, textoBoton, peligrosa = false, opcionMante
             },
             'Volver',
           ),
-          h(
+          crearElemento(
             'button',
             {
               type: 'submit',
@@ -671,15 +540,12 @@ function confirmar({ titulo, mensaje, textoBoton, peligrosa = false, opcionMante
   });
 }
 
-/** Ejecuta una accion de la API desde un boton, avisa el resultado y vuelve a pintar la lista. */
 async function ejecutarAccion(accion, recargar) {
   try {
     const { mensaje } = await accion();
     avisar(mensaje);
   } catch (error) {
-    if (!(error instanceof ApiError)) {
-      throw error;
-    }
+    relanzarSiNoEsErrorDeApi(error);
 
     avisar(error.message, 'error');
   }
@@ -687,7 +553,6 @@ async function ejecutarAccion(accion, recargar) {
   await recargar();
 }
 
-/** Pide confirmacion y elimina un recurso (vehiculo o cliente). */
 async function eliminarRecurso({ ruta, titulo, mensaje, recargar }) {
   const { aceptado } = await confirmar({ titulo, mensaje, textoBoton: 'Eliminar', peligrosa: true });
 
@@ -696,76 +561,66 @@ async function eliminarRecurso({ ruta, titulo, mensaje, recargar }) {
   }
 }
 
-/* ===========================================================================
- * Tarjetas y tabla
- * ========================================================================= */
-
 function tarjetaVehiculo(vehiculo, acciones, nota = null) {
-  return h(
+  return crearElemento(
     'article',
     { class: 'tarjeta-vehiculo' },
-    h(
+    crearElemento(
       'header',
       { class: 'tarjeta-vehiculo__cabecera' },
-      h('h3', {}, `${vehiculo.marca} ${vehiculo.modelo}`),
+      crearElemento('h3', {}, `${vehiculo.marca} ${vehiculo.modelo}`),
       insignia(vehiculo.estado),
     ),
-    h('p', { class: 'texto-suave' }, `${vehiculo.anio} · ${vehiculo.categoria || 'Sin categoría'}`),
-    nota ? h('small', { class: 'texto-suave' }, nota) : null,
-    h('div', { class: 'tarjeta-vehiculo__acciones' }, acciones),
+    crearElemento('p', { class: 'texto-suave' }, `${vehiculo.anio} · ${vehiculo.categoria || 'Sin categoría'}`),
+    nota ? crearElemento('small', { class: 'texto-suave' }, nota) : null,
+    crearElemento('div', { class: 'tarjeta-vehiculo__acciones' }, acciones),
   );
 }
 
 function tarjetaCliente(cliente, acciones) {
-  return h(
+  return crearElemento(
     'article',
     { class: 'tarjeta-cliente' },
-    h(
+    crearElemento(
       'header',
       { class: 'tarjeta-cliente__cabecera' },
-      h('h3', {}, cliente.nombre),
+      crearElemento('h3', {}, cliente.nombre),
       cliente.numero_licencia
         ? null
-        : h('span', { class: 'insignia insignia--cancelada' }, 'Sin licencia'),
+        : crearElemento('span', { class: 'insignia insignia--cancelada' }, 'Sin licencia'),
     ),
-    h(
+    crearElemento(
       'p',
       { class: 'texto-suave' },
       `${cliente.telefono || 'Sin teléfono'} · ${cliente.correo || 'Sin correo'}`,
     ),
     cliente.numero_licencia
-      ? h('small', { class: 'texto-suave' }, `Licencia: ${cliente.numero_licencia}`)
+      ? crearElemento('small', { class: 'texto-suave' }, `Licencia: ${cliente.numero_licencia}`)
       : null,
-    h('div', { class: 'tarjeta-cliente__acciones' }, acciones),
+    crearElemento('div', { class: 'tarjeta-cliente__acciones' }, acciones),
   );
 }
 
 function tarjetaDato(etiqueta, valor, variante = null) {
-  return h(
+  return crearElemento(
     'article',
     { class: variante ? `tarjeta-dato tarjeta-dato--${variante}` : 'tarjeta-dato' },
-    h('span', { class: 'tarjeta-dato__etiqueta' }, etiqueta),
-    h('strong', { class: 'tarjeta-dato__valor' }, valor),
+    crearElemento('span', { class: 'tarjeta-dato__etiqueta' }, etiqueta),
+    crearElemento('strong', { class: 'tarjeta-dato__valor' }, valor),
   );
 }
 
-/**
- * Tabla de reservas. Con "acciones" muestra los botones de devolucion y cancelacion.
- *
- * @param {object[]} reservas
- * @param {{ conCliente?: boolean, conVehiculo?: boolean,
- *           acciones?: { alDevolver: Function, alCancelar: Function } | null }} [opciones]
- */
 function tablaReservas(reservas, { conCliente = true, conVehiculo = true, acciones = null } = {}) {
-  const celda = (titulo, ...contenido) => h('td', { dataset: { titulo } }, contenido);
+  const celda = (titulo, ...contenido) => crearElemento('td', { dataset: { titulo } }, contenido);
 
   const filas = reservas.map((reserva) => {
     const estadoVisible = reserva.estado_visible;
     const botones = [];
 
     if (acciones && reserva.estado === 'activa') {
-      // Si todavia no comienza (programada) solo se puede cancelar.
-      if (estadoVisible !== 'programada') {
+      const puedeDevolverse = estadoVisible !== 'programada';
+
+      if (puedeDevolverse) {
         botones.push(
           botonAccion('Registrar devolución', 'boton--primario', () => acciones.alDevolver(reserva)),
         );
@@ -776,7 +631,7 @@ function tablaReservas(reservas, { conCliente = true, conVehiculo = true, accion
       );
     }
 
-    return h(
+    return crearElemento(
       'tr',
       { class: estadoVisible === 'vencida' ? 'tabla__fila--alerta' : null },
       celda('#', reserva.id),
@@ -786,42 +641,36 @@ function tablaReservas(reservas, { conCliente = true, conVehiculo = true, accion
       celda('Hasta', formatearFecha(reserva.fecha_fin)),
       celda('Días', contarDias(reserva.fecha_inicio, reserva.fecha_fin)),
       celda('Estado', insignia(estadoVisible)),
-      acciones ? h('td', { class: 'tabla__acciones' }, botones) : null,
+      acciones ? crearElemento('td', { class: 'tabla__acciones' }, botones) : null,
     );
   });
 
-  return h(
+  return crearElemento(
     'div',
     { class: 'tabla-contenedor' },
-    h(
+    crearElemento(
       'table',
       { class: 'tabla' },
-      h(
+      crearElemento(
         'thead',
         {},
-        h(
+        crearElemento(
           'tr',
           {},
-          h('th', {}, '#'),
-          conCliente ? h('th', {}, 'Cliente') : null,
-          conVehiculo ? h('th', {}, 'Vehículo') : null,
-          h('th', {}, 'Desde'),
-          h('th', {}, 'Hasta'),
-          h('th', {}, 'Días'),
-          h('th', {}, 'Estado'),
-          acciones ? h('th', {}, h('span', { class: 'solo-lectores-pantalla' }, 'Acciones')) : null,
+          crearElemento('th', {}, '#'),
+          conCliente ? crearElemento('th', {}, 'Cliente') : null,
+          conVehiculo ? crearElemento('th', {}, 'Vehículo') : null,
+          crearElemento('th', {}, 'Desde'),
+          crearElemento('th', {}, 'Hasta'),
+          crearElemento('th', {}, 'Días'),
+          crearElemento('th', {}, 'Estado'),
+          acciones ? crearElemento('th', {}, crearElemento('span', { class: 'solo-lectores-pantalla' }, 'Acciones')) : null,
         ),
       ),
-      h('tbody', {}, filas),
+      crearElemento('tbody', {}, filas),
     ),
   );
 }
-
-/* ===========================================================================
- * Parte comun de las paginas de la aplicacion: guarda de sesion, cabecera con el menu y cierre
- * de sesion. Cada pagina (vehiculos.html, clientes.html, ...) la usa al empezar.
- * ========================================================================= */
-
 
 const TITULO_APLICACION = 'Gestor de Alquiler';
 
@@ -838,23 +687,11 @@ function irAlInicioDeSesion() {
 }
 
 async function cerrarSesion() {
-  try {
-    await ApiClient.post('/auth/logout');
-  } catch {
-    // Si el token ya no era valido, de todas formas se cierra la sesion local.
-  } finally {
-    Sesion.limpiar();
-    irAlInicioDeSesion();
-  }
+  await ApiClient.post('/auth/logout').catch(() => null);
+  Sesion.limpiar();
+  irAlInicioDeSesion();
 }
 
-/**
- * Prepara la pagina: si no hay sesion, vuelve al inicio de sesion; si la hay, pinta la
- * cabecera y devuelve el contenedor donde la pagina coloca su contenido.
- *
- * @param {{ seccion: string, titulo: string }} opciones
- * @returns {HTMLElement | null} el contenedor "#vista", o null si se redirigio al inicio de sesion
- */
 function iniciarPagina({ seccion, titulo }) {
   if (!Sesion.haySesion()) {
     irAlInicioDeSesion();
@@ -862,20 +699,19 @@ function iniciarPagina({ seccion, titulo }) {
     return null;
   }
 
-  // Un token vencido (401) en cualquier llamada lleva de nuevo al inicio de sesion.
   ApiClient.alNoAutorizarse = irAlInicioDeSesion;
   document.title = `${titulo} | ${TITULO_APLICACION}`;
 
   document.getElementById('cabecera').append(
-    h(
+    crearElemento(
       'div',
       { class: 'barra' },
-      h('a', { class: 'barra__marca', href: 'home.html', 'aria-label': 'CarRent, ir al panel' }, logo()),
-      h(
+      crearElemento('a', { class: 'barra__marca', href: 'home.html', 'aria-label': 'CarRent, ir al panel' }, logo()),
+      crearElemento(
         'nav',
         { class: 'barra__navegacion', 'aria-label': 'Secciones' },
         SECCIONES.map(([clave, direccion, texto]) =>
-          h(
+          crearElemento(
             'a',
             {
               class: clave === seccion ? 'barra__enlace barra__enlace--activo' : 'barra__enlace',
@@ -886,7 +722,7 @@ function iniciarPagina({ seccion, titulo }) {
           ),
         ),
       ),
-      h(
+      crearElemento(
         'button',
         { type: 'button', class: 'boton boton--secundario boton--chico', onclick: cerrarSesion },
         'Cerrar sesión',
@@ -897,16 +733,12 @@ function iniciarPagina({ seccion, titulo }) {
   return document.getElementById('vista');
 }
 
-/* ===========================================================================
- * Inicio de sesion (index.html). Guarda el token y pasa al panel.
- * ========================================================================= */
-
 function paginaLogin() {
   const formulario = document.getElementById('formulario-inicio-sesion');
   const errorInicioSesion = document.getElementById('inicio-sesion-error');
 
   function mostrarError(texto) {
-    errorInicioSesion.replaceChildren(h('span', {}, texto));
+    errorInicioSesion.replaceChildren(crearElemento('span', {}, texto));
     errorInicioSesion.hidden = false;
   }
 
@@ -930,19 +762,16 @@ function paginaLogin() {
     try {
       const { data } = await ApiClient.post('/auth/login', { usuario, password });
 
-      Sesion.guardar(data.token, data.usuario);
+      Sesion.guardar(data.token);
       window.location.href = 'home.html';
     } catch (error) {
-      if (!(error instanceof ApiError)) {
-        throw error;
-      }
+      relanzarSiNoEsErrorDeApi(error);
 
       mostrarError(error.message);
       boton.disabled = false;
     }
   }
 
-  // Si ya hay una sesion iniciada, se va directo al panel.
   if (Sesion.haySesion()) {
     window.location.replace('home.html');
   }
@@ -950,42 +779,37 @@ function paginaLogin() {
   formulario.addEventListener('submit', iniciarSesion);
 }
 
-/* ===========================================================================
- * Panel general (home.html): reservas recientes, resumen de la flota y vehiculos.
- * ========================================================================= */
-
-
 function filaReserva(reserva) {
   const vehiculo = reserva.vehiculo;
   const dias = contarDias(reserva.fecha_inicio, reserva.fecha_fin);
   const rango = `${formatearFechaCorta(reserva.fecha_inicio)} → ${formatearFechaCorta(reserva.fecha_fin)}`;
   const contenido = [
     vehiculo
-      ? h('span', { class: 'fila-reserva__enlace', 'aria-hidden': 'true' }, icono('flecha'))
+      ? crearElemento('span', { class: 'fila-reserva__enlace', 'aria-hidden': 'true' }, icono('flecha'))
       : null,
-    h(
+    crearElemento(
       'div',
       { class: 'fila-reserva__datos' },
-      h(
+      crearElemento(
         'strong',
         { class: 'fila-reserva__titulo' },
         vehiculo ? `${vehiculo.marca} ${vehiculo.modelo}` : 'Vehículo eliminado',
       ),
-      h('span', { class: 'fila-reserva__detalle' }, reserva.cliente?.nombre ?? 'Cliente eliminado'),
-      h(
+      crearElemento('span', { class: 'fila-reserva__detalle' }, reserva.cliente?.nombre ?? 'Cliente eliminado'),
+      crearElemento(
         'span',
         { class: 'fila-reserva__detalle' },
         `${rango} · ${dias} ${pluralizar(dias, 'día', 'días')}`,
       ),
-      h('span', { class: 'fila-reserva__estado' }, insignia(reserva.estado_visible)),
+      crearElemento('span', { class: 'fila-reserva__estado' }, insignia(reserva.estado_visible)),
     ),
   ];
 
-  return h(
+  return crearElemento(
     'li',
     { class: 'fila-reserva' },
     vehiculo
-      ? h(
+      ? crearElemento(
           'a',
           {
             class: 'fila-reserva__contenido',
@@ -993,52 +817,51 @@ function filaReserva(reserva) {
           },
           contenido,
         )
-      : h('div', { class: 'fila-reserva__contenido' }, contenido),
+      : crearElemento('div', { class: 'fila-reserva__contenido' }, contenido),
   );
 }
 
 function indicador({ variante, etiqueta, valor, detalle, porcentaje, destino, textoAccesible }) {
   const relleno = Math.max(0, Math.min(100, porcentaje));
 
-  return h(
+  return crearElemento(
     'a',
     { class: `indicador indicador--${variante}`, href: destino },
-    h('span', { class: 'indicador__etiqueta' }, etiqueta),
-    h('strong', { class: 'indicador__valor' }, valor),
-    h('span', { class: 'indicador__detalle' }, detalle),
-    h(
+    crearElemento('span', { class: 'indicador__etiqueta' }, etiqueta),
+    crearElemento('strong', { class: 'indicador__valor' }, valor),
+    crearElemento('span', { class: 'indicador__detalle' }, detalle),
+    crearElemento(
       'div',
       { class: 'indicador__medidor' },
-      h(
+      crearElemento(
         'span',
         { class: 'indicador__barra', 'aria-hidden': 'true' },
-        h('span', { class: 'indicador__relleno', style: `--porcentaje-relleno: ${relleno}` }),
+        crearElemento('span', { class: 'indicador__relleno', style: `--porcentaje-relleno: ${relleno}` }),
       ),
-      h('span', { class: 'indicador__porcentaje' }, `${relleno} %`),
+      crearElemento('span', { class: 'indicador__porcentaje' }, `${relleno} %`),
     ),
-    h('span', { class: 'solo-lectores-pantalla' }, textoAccesible),
+    crearElemento('span', { class: 'solo-lectores-pantalla' }, textoAccesible),
   );
 }
 
-/** Grafico de dona con el porcentaje de vehiculos disponibles. */
 function dona(porcentaje, disponibles, total) {
   const radio = 52;
   const circunferencia = 2 * Math.PI * radio;
   const arco = Number(((circunferencia * Math.max(0, Math.min(100, porcentaje))) / 100).toFixed(2));
 
-  return h(
+  return crearElemento(
     'div',
     {
       class: 'dona',
       role: 'img',
       'aria-label': `${porcentaje}% de disponibilidad: ${disponibles} de ${total} vehículos disponibles`,
     },
-    svg(
+    crearElementoSvg(
       'svg',
       { class: 'dona__svg', viewBox: '0 0 120 120', 'aria-hidden': 'true', focusable: 'false' },
-      svg('circle', { class: 'dona__pista', cx: 60, cy: 60, r: radio }),
+      crearElementoSvg('circle', { class: 'dona__pista', cx: 60, cy: 60, r: radio }),
       arco > 0
-        ? svg('circle', {
+        ? crearElementoSvg('circle', {
             class: 'dona__arco',
             cx: 60,
             cy: 60,
@@ -1047,33 +870,33 @@ function dona(porcentaje, disponibles, total) {
           })
         : null,
     ),
-    h(
+    crearElemento(
       'div',
       { class: 'dona__centro', 'aria-hidden': 'true' },
-      h('strong', { class: 'dona__valor' }, `${porcentaje}%`),
+      crearElemento('strong', { class: 'dona__valor' }, `${porcentaje}%`),
     ),
   );
 }
 
 function vacioPanel(nombreIcono, titulo, descripcion) {
-  return h(
+  return crearElemento(
     'div',
     { class: 'vacio' },
     icono(nombreIcono, { grosor: 1.3, clase: 'vacio__icono' }),
-    h('strong', { class: 'vacio__titulo' }, titulo),
-    h('p', { class: 'vacio__texto' }, descripcion),
+    crearElemento('strong', { class: 'vacio__titulo' }, titulo),
+    crearElemento('p', { class: 'vacio__texto' }, descripcion),
   );
 }
 
 function iconoRecuadro(nombreIcono) {
-  return h(
+  return crearElemento(
     'span',
     { class: 'icono-recuadro', 'aria-hidden': 'true' },
     icono(nombreIcono, { grosor: 1.8 }),
   );
 }
 
-async function construirPanel() {
+async function construirPanelGeneral() {
   const { data: resumen } = await ApiClient.get('/resumen');
   const flota = resumen.vehiculos;
   const vencidas = resumen.vencidas.length;
@@ -1120,24 +943,24 @@ async function construirPanel() {
     },
   ];
 
-  return h(
+  return crearElemento(
     'section',
     { class: 'pagina panel' },
-    h(
+    crearElemento(
       'header',
       { class: 'panel__cabecera' },
-      h('h1', { class: 'panel__titulo' }, 'Panel de ', h('strong', {}, 'Gestor')),
-      h(
+      crearElemento('h1', { class: 'panel__titulo' }, 'Panel de ', crearElemento('strong', {}, 'Gestor')),
+      crearElemento(
         'div',
         { class: 'panel__acciones' },
-        h(
+        crearElemento(
           'a',
           { class: 'boton boton--destacado boton--grande', href: 'reservas.html?nueva=1' },
-          h('span', { class: 'boton__icono', 'aria-hidden': 'true' }, icono('mas')),
+          crearElemento('span', { class: 'boton__icono', 'aria-hidden': 'true' }, icono('mas')),
           'Nueva reserva',
         ),
         vencidas > 0
-          ? h(
+          ? crearElemento(
               'a',
               { class: 'aviso aviso--alerta', href: 'reservas.html?estado=activa' },
               icono('alerta'),
@@ -1148,62 +971,62 @@ async function construirPanel() {
     ),
 
     resumen.marcas.length > 0
-      ? h(
+      ? crearElemento(
           'ul',
           { class: 'panel__marcas', 'aria-label': 'Marcas de la flota' },
-          resumen.marcas.map((marca) => h('li', {}, marca)),
+          resumen.marcas.map((marca) => crearElemento('li', {}, marca)),
         )
       : null,
 
-    h(
+    crearElemento(
       'section',
       { class: 'panel__recientes', 'aria-labelledby': 'titulo-recientes' },
-      h('h2', { id: 'titulo-recientes', class: 'panel__seccion' }, 'Reservas recientes'),
+      crearElemento('h2', { id: 'titulo-recientes', class: 'panel__seccion' }, 'Reservas recientes'),
       resumen.recientes.length === 0
         ? vacioPanel(
             'calendario',
             'Aún no hay reservas.',
             'Crea tu primera reserva haciendo clic en "Nueva reserva".',
           )
-        : h('ul', { class: 'lista-reservas' }, resumen.recientes.map(filaReserva)),
+        : crearElemento('ul', { class: 'lista-reservas' }, resumen.recientes.map(filaReserva)),
     ),
 
-    h(
+    crearElemento(
       'section',
       { class: 'panel__resumen', 'aria-labelledby': 'titulo-resumen' },
-      h(
+      crearElemento(
         'header',
         { class: 'panel__resumen-cabecera' },
         iconoRecuadro('panel'),
-        h('h2', { id: 'titulo-resumen' }, 'Resumen de la flota'),
-        h(
+        crearElemento('h2', { id: 'titulo-resumen' }, 'Resumen de la flota'),
+        crearElemento(
           'a',
           { class: 'icono-recuadro', href: 'vehiculos.html', 'aria-label': 'Ver vehículos' },
           icono('flecha', { grosor: 1.8 }),
         ),
       ),
-      h(
+      crearElemento(
         'p',
         { class: 'panel__fecha' },
         'Situación de la flota al ',
-        h('span', {}, formatearFecha(resumen.fecha)),
+        crearElemento('span', {}, formatearFecha(resumen.fecha)),
       ),
-      h('div', { class: 'panel__indicadores' }, indicadores.map(indicador)),
+      crearElemento('div', { class: 'panel__indicadores' }, indicadores.map(indicador)),
     ),
 
-    h(
+    crearElemento(
       'section',
       { class: 'panel__flota', 'aria-labelledby': 'titulo-flota' },
-      h(
+      crearElemento(
         'header',
         { class: 'panel__flota-cabecera' },
-        h('h2', { id: 'titulo-flota' }, 'Vehículos'),
+        crearElemento('h2', { id: 'titulo-flota' }, 'Vehículos'),
         enlaceBoton('Ver vehículos', 'vehiculos.html', 'boton--destacado boton--chico'),
       ),
-      h(
+      crearElemento(
         'div',
         { class: 'panel__escena' },
-        h('img', {
+        crearElemento('img', {
           class: 'panel__auto',
           src: 'assets/img/hero-vehiculo.png',
           alt: '',
@@ -1219,22 +1042,22 @@ async function construirPanel() {
             'Agrega tu primer vehículo para comenzar a gestionar tu flota.',
           )
         : [
-            h(
+            crearElemento(
               'div',
               { class: 'panel__flota-datos' },
               dona(porcentajeDisponible, flota.disponible, flota.total),
-              h(
+              crearElemento(
                 'div',
                 { class: 'panel__flota-texto' },
-                h('span', { class: 'panel__flota-etiqueta' }, 'Disponibilidad'),
-                h(
+                crearElemento('span', { class: 'panel__flota-etiqueta' }, 'Disponibilidad'),
+                crearElemento(
                   'p',
                   { class: 'panel__flota-resumen' },
                   `${flota.disponible} de ${flota.total} vehículos disponibles`,
                 ),
               ),
             ),
-            h(
+            crearElemento(
               'ul',
               { class: 'especificaciones', 'aria-label': 'Estado de la flota' },
               [
@@ -1242,12 +1065,12 @@ async function construirPanel() {
                 ['llave', flota.alquilado, 'Alquilados'],
                 ['taller', flota.mantenimiento, 'En mantenimiento'],
               ].map(([nombreIcono, cantidad, texto]) =>
-                h(
+                crearElemento(
                   'li',
                   {},
                   iconoRecuadro(nombreIcono),
-                  h('strong', {}, cantidad),
-                  h('span', {}, texto),
+                  crearElemento('strong', {}, cantidad),
+                  crearElemento('span', {}, texto),
                 ),
               ),
             ),
@@ -1256,20 +1079,13 @@ async function construirPanel() {
   );
 }
 
-
 function paginaPanel() {
   const vista = iniciarPagina({ seccion: 'panel', titulo: 'Panel general' });
 
   if (vista) {
-    pintarPagina(vista, construirPanel);
+    pintarPagina(vista, construirPanelGeneral);
   }
 }
-
-/* ===========================================================================
- * Vehiculos (vehiculos.html): lista con filtros, formulario para crear y editar, y eliminacion.
- * Los filtros viajan en la URL (vehiculos.html?estado=disponible&buscar=toyota).
- * ========================================================================= */
-
 
 const OPCIONES_ESTADO_VEHICULO = [
   ['', 'Todos'],
@@ -1282,12 +1098,10 @@ function iniciarVehiculos(vista) {
   const consulta = leerConsulta();
   const buscar = consulta.get('buscar') ?? '';
   const estado = consulta.get('estado') ?? '';
-  const lista = h('div', { id: 'lista' });
+  const lista = crearElemento('div');
   let idEditando = null;
 
-  /* ---- Formulario (panel que se abre y se cierra) ---- */
-
-  const titulo = h('h2', {});
+  const titulo = crearElemento('h2', {});
   const alerta = alertaGeneral();
   const bloqueEstado = campoSeleccion({
     nombre: 'estado',
@@ -1298,24 +1112,24 @@ function iniciarVehiculos(vista) {
       { valor: 'mantenimiento', texto: 'En mantenimiento' },
     ],
   });
-  const avisoAlquilado = h(
+  const avisoAlquilado = crearElemento(
     'div',
     { class: 'campo campo--ancho', hidden: true },
-    h('span', { class: 'campo__etiqueta' }, 'Estado'),
-    h(
+    crearElemento('span', { class: 'campo__etiqueta' }, 'Estado'),
+    crearElemento(
       'p',
       { class: 'texto-suave' },
       'Alquilado. El estado se vuelve a calcular al registrar la devolución.',
     ),
   );
-  const botonGuardar = h('button', { type: 'submit', class: 'boton boton--primario' });
+  const botonGuardar = crearElemento('button', { type: 'submit', class: 'boton boton--primario' });
 
-  const formulario = h(
+  const formulario = crearElemento(
     'form',
     { class: 'formulario', hidden: true },
     titulo,
     alerta,
-    h(
+    crearElemento(
       'div',
       { class: 'rejilla-campos' },
       campo({ nombre: 'marca', etiqueta: 'Marca *', atributos: { required: true, maxlength: 100 } }),
@@ -1334,17 +1148,16 @@ function iniciarVehiculos(vista) {
       bloqueEstado,
       avisoAlquilado,
     ),
-    h(
+    crearElemento(
       'div',
       { class: 'formulario__pie' },
-      h('button', { type: 'button', class: 'boton boton--secundario', onclick: cerrarFormulario }, 'Cancelar'),
+      crearElemento('button', { type: 'button', class: 'boton boton--secundario', onclick: cerrarFormulario }, 'Cancelar'),
       botonGuardar,
     ),
   );
 
-  /** Abre el formulario vacio (nuevo) o con los datos del vehiculo (editar). */
   function abrirFormulario(vehiculo = null) {
-    const alquilado = vehiculo?.estado === 'alquilado';
+    const vehiculoAlquiladoSinCambioDeEstado = vehiculo?.estado === 'alquilado';
 
     limpiarErrores(formulario, alerta);
     idEditando = vehiculo?.id ?? null;
@@ -1355,9 +1168,8 @@ function iniciarVehiculos(vista) {
     formulario.elements.anio.value = vehiculo?.anio ?? '';
     formulario.elements.categoria.value = vehiculo?.categoria ?? '';
     formulario.elements.estado.value = vehiculo?.estado === 'mantenimiento' ? 'mantenimiento' : 'disponible';
-    // Un vehiculo alquilado no permite cambiar el estado desde el formulario.
-    bloqueEstado.hidden = alquilado;
-    avisoAlquilado.hidden = !alquilado;
+    bloqueEstado.hidden = vehiculoAlquiladoSinCambioDeEstado;
+    avisoAlquilado.hidden = !vehiculoAlquiladoSinCambioDeEstado;
     formulario.hidden = false;
     formulario.elements.marca.focus();
   }
@@ -1388,8 +1200,6 @@ function iniciarVehiculos(vista) {
     await recargar();
   });
 
-  /* ---- Lista ---- */
-
   function tarjeta(vehiculo) {
     return tarjetaVehiculo(vehiculo, [
       botonAccion('Editar', 'boton--secundario', () => abrirFormulario(vehiculo)),
@@ -1415,20 +1225,18 @@ function iniciarVehiculos(vista) {
 
       return vehiculos.length === 0
         ? estadoVacio('No hay vehículos que coincidan. Registre uno con "Nuevo vehículo".')
-        : h('div', { class: 'rejilla-tarjetas' }, vehiculos.map(tarjeta));
+        : crearElemento('div', { class: 'rejilla-tarjetas' }, vehiculos.map(tarjeta));
     });
   }
 
-  /* ---- Pagina ---- */
-
-  const filtros = h(
+  const filtros = crearElemento(
     'form',
     { class: 'filtros', role: 'search', method: 'get' },
-    h(
+    crearElemento(
       'div',
       { class: 'campo filtros__campo' },
-      h('label', { class: 'campo__etiqueta', for: 'vehiculos-buscar' }, 'Buscar'),
-      h('input', {
+      crearElemento('label', { class: 'campo__etiqueta', for: 'vehiculos-buscar' }, 'Buscar'),
+      crearElemento('input', {
         class: 'campo__control',
         id: 'vehiculos-buscar',
         name: 'buscar',
@@ -1437,29 +1245,29 @@ function iniciarVehiculos(vista) {
         value: buscar,
       }),
     ),
-    h(
+    crearElemento(
       'div',
       { class: 'campo filtros__campo' },
-      h('label', { class: 'campo__etiqueta', for: 'vehiculos-estado' }, 'Estado'),
-      h(
+      crearElemento('label', { class: 'campo__etiqueta', for: 'vehiculos-estado' }, 'Estado'),
+      crearElemento(
         'select',
         { class: 'campo__control', id: 'vehiculos-estado', name: 'estado' },
         OPCIONES_ESTADO_VEHICULO.map(([valor, texto]) =>
-          h('option', { value: valor, selected: valor === estado }, texto),
+          crearElemento('option', { value: valor, selected: valor === estado }, texto),
         ),
       ),
     ),
-    h('button', { type: 'submit', class: 'boton boton--secundario' }, 'Filtrar'),
+    crearElemento('button', { type: 'submit', class: 'boton boton--secundario' }, 'Filtrar'),
   );
 
   vista.replaceChildren(
-    h(
+    crearElemento(
       'section',
       { class: 'pagina' },
       cabeceraPagina(
         'Vehículos',
         'Flota registrada para alquiler.',
-        h(
+        crearElemento(
           'button',
           { type: 'button', class: 'boton boton--primario', onclick: () => abrirFormulario() },
           'Nuevo vehículo',
@@ -1474,7 +1282,6 @@ function iniciarVehiculos(vista) {
   return recargar();
 }
 
-
 function paginaVehiculos() {
   const vista = iniciarPagina({ seccion: 'vehiculos', titulo: 'Vehículos' });
 
@@ -1483,29 +1290,21 @@ function paginaVehiculos() {
   }
 }
 
-/* ===========================================================================
- * Clientes (clientes.html): lista con busqueda, formulario para crear y editar, y eliminacion.
- * La busqueda viaja en la URL (clientes.html?buscar=maria).
- * ========================================================================= */
-
-
 function iniciarClientes(vista) {
   const buscar = leerConsulta().get('buscar') ?? '';
-  const lista = h('div', { id: 'lista' });
+  const lista = crearElemento('div');
   let idEditando = null;
 
-  /* ---- Formulario (panel que se abre y se cierra) ---- */
-
-  const titulo = h('h2', {});
+  const titulo = crearElemento('h2', {});
   const alerta = alertaGeneral();
-  const botonGuardar = h('button', { type: 'submit', class: 'boton boton--primario' });
+  const botonGuardar = crearElemento('button', { type: 'submit', class: 'boton boton--primario' });
 
-  const formulario = h(
+  const formulario = crearElemento(
     'form',
     { class: 'formulario', hidden: true },
     titulo,
     alerta,
-    h(
+    crearElemento(
       'div',
       { class: 'rejilla-campos' },
       campo({
@@ -1524,15 +1323,14 @@ function iniciarClientes(vista) {
         atributos: { maxlength: 50 },
       }),
     ),
-    h(
+    crearElemento(
       'div',
       { class: 'formulario__pie' },
-      h('button', { type: 'button', class: 'boton boton--secundario', onclick: cerrarFormulario }, 'Cancelar'),
+      crearElemento('button', { type: 'button', class: 'boton boton--secundario', onclick: cerrarFormulario }, 'Cancelar'),
       botonGuardar,
     ),
   );
 
-  /** Abre el formulario vacio (nuevo) o con los datos del cliente (editar). */
   function abrirFormulario(cliente = null) {
     limpiarErrores(formulario, alerta);
     idEditando = cliente?.id ?? null;
@@ -1567,8 +1365,6 @@ function iniciarClientes(vista) {
     await recargar();
   });
 
-  /* ---- Lista ---- */
-
   function tarjeta(cliente) {
     return tarjetaCliente(cliente, [
       botonAccion('Editar', 'boton--secundario', () => abrirFormulario(cliente)),
@@ -1594,20 +1390,18 @@ function iniciarClientes(vista) {
 
       return clientes.length === 0
         ? estadoVacio('No hay clientes que coincidan. Registre uno con "Nuevo cliente".')
-        : h('div', { class: 'rejilla-tarjetas' }, clientes.map(tarjeta));
+        : crearElemento('div', { class: 'rejilla-tarjetas' }, clientes.map(tarjeta));
     });
   }
 
-  /* ---- Pagina ---- */
-
-  const filtros = h(
+  const filtros = crearElemento(
     'form',
     { class: 'filtros', role: 'search', method: 'get' },
-    h(
+    crearElemento(
       'div',
       { class: 'campo filtros__campo' },
-      h('label', { class: 'campo__etiqueta', for: 'clientes-buscar' }, 'Buscar'),
-      h('input', {
+      crearElemento('label', { class: 'campo__etiqueta', for: 'clientes-buscar' }, 'Buscar'),
+      crearElemento('input', {
         class: 'campo__control',
         id: 'clientes-buscar',
         name: 'buscar',
@@ -1616,17 +1410,17 @@ function iniciarClientes(vista) {
         value: buscar,
       }),
     ),
-    h('button', { type: 'submit', class: 'boton boton--secundario' }, 'Buscar'),
+    crearElemento('button', { type: 'submit', class: 'boton boton--secundario' }, 'Buscar'),
   );
 
   vista.replaceChildren(
-    h(
+    crearElemento(
       'section',
       { class: 'pagina' },
       cabeceraPagina(
         'Clientes',
         'Personas registradas para alquilar vehículos.',
-        h(
+        crearElemento(
           'button',
           { type: 'button', class: 'boton boton--primario', onclick: () => abrirFormulario() },
           'Nuevo cliente',
@@ -1641,7 +1435,6 @@ function iniciarClientes(vista) {
   return recargar();
 }
 
-
 function paginaClientes() {
   const vista = iniciarPagina({ seccion: 'clientes', titulo: 'Clientes' });
 
@@ -1650,16 +1443,6 @@ function paginaClientes() {
   }
 }
 
-/* ===========================================================================
- * Reservas (reservas.html): lista con filtro por estado, formulario de nueva reserva en dos pasos
- * (periodo y luego cliente y vehiculo disponible), devolucion y cancelacion.
- *
- * Direcciones utiles:
- *   reservas.html?estado=activa
- *   reservas.html?nueva=1&fecha_inicio=2026-12-01&fecha_fin=2026-12-05&vehiculo_id=3
- * ========================================================================= */
-
-
 const OPCIONES_ESTADO_RESERVA = [
   ['activa', 'Activas'],
   ['completada', 'Completadas'],
@@ -1667,7 +1450,6 @@ const OPCIONES_ESTADO_RESERVA = [
   ['todas', 'Todas'],
 ];
 
-/** Acciones de devolucion y cancelacion de una reserva, con su dialogo de confirmacion. */
 function accionesReserva(recargar) {
   return {
     async alDevolver(reserva) {
@@ -1704,26 +1486,23 @@ function accionesReserva(recargar) {
 function iniciarReservas(vista) {
   const consulta = leerConsulta();
   const estado = consulta.get('estado') ?? 'activa';
-  const lista = h('div', { id: 'lista' });
-  const panel = h('div', { id: 'panel-reserva', hidden: true });
+  const lista = crearElemento('div');
+  const panel = crearElemento('div', { hidden: true });
 
-  /* ---- Nueva reserva ---- */
-
-  /** Paso 1 (periodo) y, si ya hay fechas, paso 2 (cliente y vehiculo). */
-  async function construirPanel(parametros) {
+  async function construirPanelNuevaReserva(parametros) {
     const fechaInicio = parametros.get('fecha_inicio') ?? hoyIso();
     const fechaFin = parametros.get('fecha_fin') ?? '';
     const vehiculoElegido = parametros.get('vehiculo_id') ?? '';
     const clienteElegido = parametros.get('cliente_id') ?? '';
     const hoy = hoyIso();
 
-    const formularioPeriodo = h(
+    const formularioPeriodo = crearElemento(
       'form',
       { class: 'formulario', method: 'get' },
-      h('input', { type: 'hidden', name: 'nueva', value: 1 }),
-      vehiculoElegido ? h('input', { type: 'hidden', name: 'vehiculo_id', value: vehiculoElegido }) : null,
-      h('h2', {}, '1. Periodo'),
-      h(
+      crearElemento('input', { type: 'hidden', name: 'nueva', value: 1 }),
+      vehiculoElegido ? crearElemento('input', { type: 'hidden', name: 'vehiculo_id', value: vehiculoElegido }) : null,
+      crearElemento('h2', {}, '1. Periodo'),
+      crearElemento(
         'div',
         { class: 'rejilla-campos' },
         campo({
@@ -1741,19 +1520,19 @@ function iniciarReservas(vista) {
           atributos: { required: true, min: hoy },
         }),
       ),
-      h(
+      crearElemento(
         'div',
         { class: 'formulario__pie' },
-        h('button', { type: 'button', class: 'boton boton--texto', onclick: cerrarPanel }, 'Cancelar'),
-        h('button', { type: 'submit', class: 'boton boton--secundario' }, 'Ver vehículos disponibles'),
+        crearElemento('button', { type: 'button', class: 'boton boton--texto', onclick: cerrarPanel }, 'Cancelar'),
+        crearElemento('button', { type: 'submit', class: 'boton boton--secundario' }, 'Ver vehículos disponibles'),
       ),
     );
 
-    const contenido = h(
+    const contenido = crearElemento(
       'div',
       { class: 'pagina pagina--angosta' },
-      h('h2', {}, 'Nueva reserva'),
-      h('p', { class: 'texto-suave' }, 'Elija las fechas para ver los vehículos disponibles.'),
+      crearElemento('h2', {}, 'Nueva reserva'),
+      crearElemento('p', { class: 'texto-suave' }, 'Elija las fechas para ver los vehículos disponibles.'),
       formularioPeriodo,
     );
 
@@ -1782,17 +1561,17 @@ function iniciarReservas(vista) {
     const vehiculos = disponibles.vehiculos;
     const alerta = alertaGeneral();
 
-    const formularioReserva = h(
+    const formularioReserva = crearElemento(
       'form',
       { class: 'formulario' },
-      h('h2', {}, '2. Cliente y vehículo'),
-      h(
+      crearElemento('h2', {}, '2. Cliente y vehículo'),
+      crearElemento(
         'p',
         { class: 'texto-suave' },
         `Del ${formatearFecha(fechaInicio)} al ${formatearFecha(fechaFin)}: ${vehiculos.length} vehículo(s) disponible(s).`,
       ),
       alerta,
-      h(
+      crearElemento(
         'div',
         { class: 'rejilla-campos' },
         campoSeleccion({
@@ -1835,11 +1614,11 @@ function iniciarReservas(vista) {
           ],
         }),
       ),
-      h(
+      crearElemento(
         'div',
         { class: 'formulario__pie' },
-        h('button', { type: 'button', class: 'boton boton--secundario', onclick: cerrarPanel }, 'Cancelar'),
-        h('button', { type: 'submit', class: 'boton boton--primario' }, 'Reservar'),
+        crearElemento('button', { type: 'button', class: 'boton boton--secundario', onclick: cerrarPanel }, 'Cancelar'),
+        crearElemento('button', { type: 'submit', class: 'boton boton--primario' }, 'Reservar'),
       ),
     );
 
@@ -1862,7 +1641,7 @@ function iniciarReservas(vista) {
   }
 
   async function abrirPanel(parametros = new URLSearchParams()) {
-    await pintarPagina(panel, () => construirPanel(parametros));
+    await pintarPagina(panel, () => construirPanelNuevaReserva(parametros));
     panel.hidden = false;
   }
 
@@ -1870,8 +1649,6 @@ function iniciarReservas(vista) {
     panel.hidden = true;
     panel.replaceChildren();
   }
-
-  /* ---- Lista ---- */
 
   function recargar() {
     return pintarPagina(lista, async () => {
@@ -1885,34 +1662,32 @@ function iniciarReservas(vista) {
     });
   }
 
-  /* ---- Pagina ---- */
-
-  const filtros = h(
+  const filtros = crearElemento(
     'form',
     { class: 'filtros', method: 'get' },
-    h(
+    crearElemento(
       'div',
       { class: 'campo filtros__campo' },
-      h('label', { class: 'campo__etiqueta', for: 'reservas-estado' }, 'Estado'),
-      h(
+      crearElemento('label', { class: 'campo__etiqueta', for: 'reservas-estado' }, 'Estado'),
+      crearElemento(
         'select',
         { class: 'campo__control', id: 'reservas-estado', name: 'estado' },
         OPCIONES_ESTADO_RESERVA.map(([valor, texto]) =>
-          h('option', { value: valor, selected: valor === estado }, texto),
+          crearElemento('option', { value: valor, selected: valor === estado }, texto),
         ),
       ),
     ),
-    h('button', { type: 'submit', class: 'boton boton--secundario' }, 'Filtrar'),
+    crearElemento('button', { type: 'submit', class: 'boton boton--secundario' }, 'Filtrar'),
   );
 
   vista.replaceChildren(
-    h(
+    crearElemento(
       'section',
       { class: 'pagina' },
       cabeceraPagina(
         'Reservas',
         'Alquileres registrados, devoluciones y cancelaciones.',
-        h(
+        crearElemento(
           'button',
           { type: 'button', class: 'boton boton--primario', onclick: () => abrirPanel() },
           'Nueva reserva',
@@ -1931,7 +1706,6 @@ function iniciarReservas(vista) {
   return recargar();
 }
 
-
 function paginaReservas() {
   const vista = iniciarPagina({ seccion: 'reservas', titulo: 'Reservas' });
 
@@ -1940,25 +1714,19 @@ function paginaReservas() {
   }
 }
 
-/* ===========================================================================
- * Disponibilidad (disponibilidad.html): vehiculos que se pueden reservar en un periodo.
- * El periodo viaja en la URL (disponibilidad.html?fecha_inicio=2026-12-01&fecha_fin=2026-12-05).
- * ========================================================================= */
-
-
 async function construirDisponibilidad() {
   const consulta = leerConsulta();
   const fechaInicio = consulta.get('fecha_inicio') ?? hoyIso();
   const fechaFin = consulta.get('fecha_fin') ?? fechaInicio;
 
-  const filtros = h(
+  const filtros = crearElemento(
     'form',
     { class: 'filtros', method: 'get' },
-    h(
+    crearElemento(
       'div',
       { class: 'campo filtros__campo' },
-      h('label', { class: 'campo__etiqueta', for: 'campo-fecha_inicio' }, 'Desde'),
-      h('input', {
+      crearElemento('label', { class: 'campo__etiqueta', for: 'campo-fecha_inicio' }, 'Desde'),
+      crearElemento('input', {
         class: 'campo__control',
         id: 'campo-fecha_inicio',
         name: 'fecha_inicio',
@@ -1967,11 +1735,11 @@ async function construirDisponibilidad() {
         value: fechaInicio,
       }),
     ),
-    h(
+    crearElemento(
       'div',
       { class: 'campo filtros__campo' },
-      h('label', { class: 'campo__etiqueta', for: 'campo-fecha_fin' }, 'Hasta'),
-      h('input', {
+      crearElemento('label', { class: 'campo__etiqueta', for: 'campo-fecha_fin' }, 'Hasta'),
+      crearElemento('input', {
         class: 'campo__control',
         id: 'campo-fecha_fin',
         name: 'fecha_fin',
@@ -1980,10 +1748,10 @@ async function construirDisponibilidad() {
         value: fechaFin,
       }),
     ),
-    h('button', { type: 'submit', class: 'boton boton--primario' }, 'Consultar'),
+    crearElemento('button', { type: 'submit', class: 'boton boton--primario' }, 'Consultar'),
   );
 
-  const pagina = h(
+  const pagina = crearElemento(
     'section',
     { class: 'pagina' },
     cabeceraPagina('Disponibilidad', 'Vehículos que se pueden reservar en un periodo.'),
@@ -2014,10 +1782,10 @@ async function construirDisponibilidad() {
       : `del ${formatearFecha(resultado.fecha_inicio)} al ${formatearFecha(resultado.fecha_fin)}`;
 
   pagina.append(
-    h('p', { class: 'texto-suave' }, `${vehiculos.length} vehículo(s) disponible(s) ${textoRango}.`),
+    crearElemento('p', { class: 'texto-suave' }, `${vehiculos.length} vehículo(s) disponible(s) ${textoRango}.`),
     vehiculos.length === 0
       ? estadoVacio('No hay vehículos disponibles en ese periodo.')
-      : h(
+      : crearElemento(
           'div',
           { class: 'rejilla-tarjetas' },
           vehiculos.map((vehiculo) =>
@@ -2035,7 +1803,7 @@ async function construirDisponibilidad() {
                   'boton--chico boton--primario',
                 ),
               ],
-              // El estado actual puede ser "alquilado" si se libera antes del periodo consultado.
+
               vehiculo.estado === 'alquilado'
                 ? 'Hoy está alquilado; se libera antes de esa fecha.'
                 : null,
@@ -2047,7 +1815,6 @@ async function construirDisponibilidad() {
   return pagina;
 }
 
-
 function paginaDisponibilidad() {
   const vista = iniciarPagina({ seccion: 'disponibilidad', titulo: 'Disponibilidad' });
 
@@ -2055,12 +1822,6 @@ function paginaDisponibilidad() {
     pintarPagina(vista, construirDisponibilidad);
   }
 }
-
-/* ===========================================================================
- * Historial de alquileres de un vehiculo o de un cliente (historial.html).
- * Direcciones: historial.html?tipo=vehiculo&id=3 e historial.html?tipo=cliente&id=1
- * ========================================================================= */
-
 
 async function construirHistorial(tipo, id) {
   const esVehiculo = tipo === 'vehiculo';
@@ -2084,29 +1845,29 @@ async function construirHistorial(tipo, id) {
           : '',
       ];
 
-  return h(
+  return crearElemento(
     'section',
     { class: 'pagina' },
-    h(
+    crearElemento(
       'header',
       { class: 'pagina__cabecera' },
-      h(
+      crearElemento(
         'div',
         {},
-        h(
+        crearElemento(
           'p',
           {},
-          h(
+          crearElemento(
             'a',
             { href: esVehiculo ? 'vehiculos.html' : 'clientes.html' },
             `Volver a ${esVehiculo ? 'Vehículos' : 'Clientes'}`,
           ),
         ),
-        h('h1', {}, `Historial: ${esVehiculo ? textoVehiculo(propietario) : propietario.nombre}`),
-        h('p', { class: 'texto-suave' }, subtitulo),
+        crearElemento('h1', {}, `Historial: ${esVehiculo ? textoVehiculo(propietario) : propietario.nombre}`),
+        crearElemento('p', { class: 'texto-suave' }, subtitulo),
       ),
     ),
-    h(
+    crearElemento(
       'div',
       { class: 'tarjetas-resumen' },
       tarjetaDato('Reservas', reservas.length),
@@ -2120,7 +1881,6 @@ async function construirHistorial(tipo, id) {
       : tablaReservas(reservas, { conCliente: esVehiculo, conVehiculo: !esVehiculo }),
   );
 }
-
 
 function paginaHistorial() {
   const vista = iniciarPagina({
@@ -2140,11 +1900,6 @@ function paginaHistorial() {
     }
   }
 }
-
-/* ===========================================================================
- * Arranque: cada HTML indica su pagina con <body data-pagina="..."> y aqui se ejecuta
- * la funcion que le corresponde.
- * ========================================================================= */
 
 const PAGINAS = {
   login: paginaLogin,

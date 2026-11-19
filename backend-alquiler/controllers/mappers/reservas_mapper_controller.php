@@ -6,9 +6,6 @@ use app\models\entities\Reserva;
 
 class ReservasMapperController
 {
-    /**
-     * @return array<string, mixed> la reserva tal como la devuelve la API, con su cliente y su vehiculo si se cargaron
-     */
     public static function to_array(Reserva $reserva): array
     {
         $datos = [
@@ -34,10 +31,6 @@ class ReservasMapperController
         return $datos;
     }
 
-    /**
-     * @param list<Reserva> $reservas
-     * @return list<array<string, mixed>>
-     */
     public static function to_array_list(array $reservas): array
     {
         return array_map(fn (Reserva $reserva): array => self::to_array($reserva), $reservas);

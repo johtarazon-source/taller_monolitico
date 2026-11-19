@@ -29,15 +29,12 @@ class VehiculosController implements VehiculosControllerInterface
     {
         $this->vehiculos_repository->sync_estados();
 
-        return array_map(
-            fn (Vehiculo $vehiculo): array => VehiculosMapperController::to_array($vehiculo),
-            $this->vehiculos_repository->get_vehiculos($filtros)
-        );
+        return VehiculosMapperController::to_array_list($this->vehiculos_repository->get_vehiculos($filtros));
     }
 
     public function get_vehiculo(int $id): array
     {
-        return VehiculosMapperController::to_array($this->obtener($id));
+        return VehiculosMapperController::to_array($this->buscar_o_lanzar_no_encontrado($id));
     }
 
     public function save_vehiculo(array $datos): array
@@ -52,14 +49,13 @@ class VehiculosController implements VehiculosControllerInterface
 
     public function update_vehiculo(int $id, array $datos): array
     {
-        $actual = $this->obtener($id);
+        $actual = $this->buscar_o_lanzar_no_encontrado($id);
         $campos = $this->validar($datos);
 
         if (($campos['estado'] ?? null) === Vehiculo::MANTENIMIENTO && $actual->get_estado() === Vehiculo::ALQUILADO) {
             throw new ConflictException('El vehículo está alquilado. Registre la devolución antes de enviarlo a mantenimiento.');
         }
 
-        // Si no se envia el estado, se conserva el actual.
         $this->vehiculos_repository->update_vehiculo(VehiculosMapperController::to_entity($campos, $id), isset($campos['estado']));
         $this->vehiculos_repository->sync_estados();
 
@@ -68,7 +64,7 @@ class VehiculosController implements VehiculosControllerInterface
 
     public function delete_vehiculo(int $id): void
     {
-        $this->obtener($id);
+        $this->buscar_o_lanzar_no_encontrado($id);
 
         if ($this->vehiculos_repository->has_reservas($id)) {
             throw new ConflictException('El vehículo tiene reservas registradas y no se puede eliminar sin perder su historial.');
@@ -94,8 +90,7 @@ class VehiculosController implements VehiculosControllerInterface
         return [
             'fecha_inicio' => $inicio,
             'fecha_fin' => $fin,
-            'vehiculos' => array_map(
-                fn (Vehiculo $vehiculo): array => VehiculosMapperController::to_array($vehiculo),
+            'vehiculos' => VehiculosMapperController::to_array_list(
                 $this->vehiculos_repository->get_vehiculos_disponibles($inicio, $fin)
             ),
         ];
@@ -103,17 +98,12 @@ class VehiculosController implements VehiculosControllerInterface
 
     public function get_historial(int $id): array
     {
-        $this->obtener($id);
+        $this->buscar_o_lanzar_no_encontrado($id);
 
         return ReservasMapperController::to_array_list($this->reservas_repository->get_reservas_by_vehiculo($id));
     }
 
-    /**
-     * Busca el vehiculo despues de sincronizar los estados.
-     *
-     * @throws NotFoundException si no existe
-     */
-    private function obtener(int $id): Vehiculo
+    private function buscar_o_lanzar_no_encontrado(int $id): Vehiculo
     {
         $this->vehiculos_repository->sync_estados();
         $vehiculo = $this->vehiculos_repository->find_vehiculo_by_id($id);
@@ -125,10 +115,6 @@ class VehiculosController implements VehiculosControllerInterface
         return $vehiculo;
     }
 
-    /**
-     * @param array<string, mixed> $datos
-     * @return array<string, mixed> marca, modelo, anio, categoria y, si se envio, estado
-     */
     private function validar(array $datos): array
     {
         $validador = new Validator($datos);

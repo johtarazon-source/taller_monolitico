@@ -15,9 +15,6 @@ use app\controllers\vehiculos\VehiculosControllerInterface;
 use app\models\config\Env;
 use app\models\config\ModelsConfig;
 
-/**
- * Arma los controladores con los repositorios que necesitan.
- */
 class ControllersConfig
 {
     public static function get_sessions_controller(): SessionsControllerInterface
