@@ -17,12 +17,23 @@ use app\models\config\ModelsConfig;
 
 class ControllersConfig
 {
+    private const ADMIN_USUARIO_POR_DEFECTO = 'admin';
+    private const ADMIN_CONTRASENA_POR_DEFECTO = 'admin1234';
+
     public static function get_sessions_controller(): SessionsControllerInterface
     {
+        $usuario = Env::obtener('ADMIN_USER');
+        $contrasena = Env::obtener('ADMIN_PASSWORD');
+
+        if ($usuario === null && $contrasena === null) {
+            $usuario = self::ADMIN_USUARIO_POR_DEFECTO;
+            $contrasena = self::ADMIN_CONTRASENA_POR_DEFECTO;
+        }
+
         return new SessionsController(
             ModelsConfig::get_tokens_repository(),
-            Env::obtener('ADMIN_USER', ''),
-            Env::obtener('ADMIN_PASSWORD', ''),
+            $usuario ?? '',
+            $contrasena ?? '',
             (int) Env::obtener('APP_TOKEN_TTL_MINUTES', '120')
         );
     }
